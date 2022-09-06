@@ -1,0 +1,217 @@
+Metal device set to: Apple M1 Pro
+
+systemMemory: 16.00 GB
+maxCacheSize: 5.33 GB
+
+Model: "functional_1"
+__________________________________________________________________________________________________
+ Layer (type)                   Output Shape         Param #     Connected to                     
+==================================================================================================
+ input_1 (InputLayer)           [(None, 96, 96, 96,  0           []                               
+                                 1)]                                                              
+                                                                                                  
+ block1_conv1 (Conv3D)          (None, 96, 96, 96,   1792        ['input_1[0][0]']                
+                                64)                                                               
+                                                                                                  
+ block1_conv2 (Conv3D)          (None, 96, 96, 96,   110656      ['block1_conv1[0][0]']           
+                                64)                                                               
+                                                                                                  
+ block1_pool (MaxPooling3D)     (None, 48, 48, 48,   0           ['block1_conv2[0][0]']           
+                                64)                                                               
+                                                                                                  
+ block2_conv1 (Conv3D)          (None, 48, 48, 48,   221312      ['block1_pool[0][0]']            
+                                128)                                                              
+                                                                                                  
+ block2_conv2 (Conv3D)          (None, 48, 48, 48,   442496      ['block2_conv1[0][0]']           
+                                128)                                                              
+                                                                                                  
+ block2_pool (MaxPooling3D)     (None, 24, 24, 24,   0           ['block2_conv2[0][0]']           
+                                128)                                                              
+                                                                                                  
+ block3_conv1 (Conv3D)          (None, 24, 24, 24,   884992      ['block2_pool[0][0]']            
+                                256)                                                              
+                                                                                                  
+ block3_conv2 (Conv3D)          (None, 24, 24, 24,   1769728     ['block3_conv1[0][0]']           
+                                256)                                                              
+                                                                                                  
+ block3_conv3 (Conv3D)          (None, 24, 24, 24,   1769728     ['block3_conv2[0][0]']           
+                                256)                                                              
+                                                                                                  
+ block3_pool (MaxPooling3D)     (None, 12, 12, 12,   0           ['block3_conv3[0][0]']           
+                                256)                                                              
+                                                                                                  
+ block4_conv1 (Conv3D)          (None, 12, 12, 12,   3539456     ['block3_pool[0][0]']            
+                                512)                                                              
+                                                                                                  
+ block4_conv2 (Conv3D)          (None, 12, 12, 12,   7078400     ['block4_conv1[0][0]']           
+                                512)                                                              
+                                                                                                  
+ block4_conv3 (Conv3D)          (None, 12, 12, 12,   7078400     ['block4_conv2[0][0]']           
+                                512)                                                              
+                                                                                                  
+ block4_pool (MaxPooling3D)     (None, 6, 6, 6, 512  0           ['block4_conv3[0][0]']           
+                                )                                                                 
+                                                                                                  
+ block5_conv1 (Conv3D)          (None, 6, 6, 6, 512  7078400     ['block4_pool[0][0]']            
+                                )                                                                 
+                                                                                                  
+ block5_conv2 (Conv3D)          (None, 6, 6, 6, 512  7078400     ['block5_conv1[0][0]']           
+                                )                                                                 
+                                                                                                  
+ block5_conv3 (Conv3D)          (None, 6, 6, 6, 512  7078400     ['block5_conv2[0][0]']           
+                                )                                                                 
+                                                                                                  
+ block5_pool (MaxPooling3D)     (None, 3, 3, 3, 512  0           ['block5_conv3[0][0]']           
+                                )                                                                 
+                                                                                                  
+ center_block1_conv (Conv3D)    (None, 3, 3, 3, 512  7077888     ['block5_pool[0][0]']            
+                                )                                                                 
+                                                                                                  
+ center_block1_bn (BatchNormali  (None, 3, 3, 3, 512  2048       ['center_block1_conv[0][0]']     
+ zation)                        )                                                                 
+                                                                                                  
+ center_block1_relu (Activation  (None, 3, 3, 3, 512  0          ['center_block1_bn[0][0]']       
+ )                              )                                                                 
+                                                                                                  
+ center_block2_conv (Conv3D)    (None, 3, 3, 3, 512  7077888     ['center_block1_relu[0][0]']     
+                                )                                                                 
+                                                                                                  
+ center_block2_bn (BatchNormali  (None, 3, 3, 3, 512  2048       ['center_block2_conv[0][0]']     
+ zation)                        )                                                                 
+                                                                                                  
+ center_block2_relu (Activation  (None, 3, 3, 3, 512  0          ['center_block2_bn[0][0]']       
+ )                              )                                                                 
+                                                                                                  
+ decoder_stage0_upsampling (UpS  (None, 6, 6, 6, 512  0          ['center_block2_relu[0][0]']     
+ ampling3D)                     )                                                                 
+                                                                                                  
+ decoder_stage0_concat (Concate  (None, 6, 6, 6, 102  0          ['decoder_stage0_upsampling[0][0]
+ nate)                          4)                               ',                               
+                                                                  'block5_conv3[0][0]']           
+                                                                                                  
+ decoder_stage0a_conv (Conv3D)  (None, 6, 6, 6, 256  7077888     ['decoder_stage0_concat[0][0]']  
+                                )                                                                 
+                                                                                                  
+ decoder_stage0a_bn (BatchNorma  (None, 6, 6, 6, 256  1024       ['decoder_stage0a_conv[0][0]']   
+ lization)                      )                                                                 
+                                                                                                  
+ decoder_stage0a_relu (Activati  (None, 6, 6, 6, 256  0          ['decoder_stage0a_bn[0][0]']     
+ on)                            )                                                                 
+                                                                                                  
+ decoder_stage0b_conv (Conv3D)  (None, 6, 6, 6, 256  1769472     ['decoder_stage0a_relu[0][0]']   
+                                )                                                                 
+                                                                                                  
+ decoder_stage0b_bn (BatchNorma  (None, 6, 6, 6, 256  1024       ['decoder_stage0b_conv[0][0]']   
+ lization)                      )                                                                 
+                                                                                                  
+ decoder_stage0b_relu (Activati  (None, 6, 6, 6, 256  0          ['decoder_stage0b_bn[0][0]']     
+ on)                            )                                                                 
+                                                                                                  
+ decoder_stage1_upsampling (UpS  (None, 12, 12, 12,   0          ['decoder_stage0b_relu[0][0]']   
+ ampling3D)                     256)                                                              
+                                                                                                  
+ decoder_stage1_concat (Concate  (None, 12, 12, 12,   0          ['decoder_stage1_upsampling[0][0]
+ nate)                          768)                             ',                               
+                                                                  'block4_conv3[0][0]']           
+                                                                                                  
+ decoder_stage1a_conv (Conv3D)  (None, 12, 12, 12,   2654208     ['decoder_stage1_concat[0][0]']  
+                                128)                                                              
+                                                                                                  
+ decoder_stage1a_bn (BatchNorma  (None, 12, 12, 12,   512        ['decoder_stage1a_conv[0][0]']   
+ lization)                      128)                                                              
+                                                                                                  
+ decoder_stage1a_relu (Activati  (None, 12, 12, 12,   0          ['decoder_stage1a_bn[0][0]']     
+ on)                            128)                                                              
+                                                                                                  
+ decoder_stage1b_conv (Conv3D)  (None, 12, 12, 12,   442368      ['decoder_stage1a_relu[0][0]']   
+                                128)                                                              
+                                                                                                  
+ decoder_stage1b_bn (BatchNorma  (None, 12, 12, 12,   512        ['decoder_stage1b_conv[0][0]']   
+ lization)                      128)                                                              
+                                                                                                  
+ decoder_stage1b_relu (Activati  (None, 12, 12, 12,   0          ['decoder_stage1b_bn[0][0]']     
+ on)                            128)                                                              
+                                                                                                  
+ decoder_stage2_upsampling (UpS  (None, 24, 24, 24,   0          ['decoder_stage1b_relu[0][0]']   
+ ampling3D)                     128)                                                              
+                                                                                                  
+ decoder_stage2_concat (Concate  (None, 24, 24, 24,   0          ['decoder_stage2_upsampling[0][0]
+ nate)                          384)                             ',                               
+                                                                  'block3_conv3[0][0]']           
+                                                                                                  
+ decoder_stage2a_conv (Conv3D)  (None, 24, 24, 24,   663552      ['decoder_stage2_concat[0][0]']  
+                                64)                                                               
+                                                                                                  
+ decoder_stage2a_bn (BatchNorma  (None, 24, 24, 24,   256        ['decoder_stage2a_conv[0][0]']   
+ lization)                      64)                                                               
+                                                                                                  
+ decoder_stage2a_relu (Activati  (None, 24, 24, 24,   0          ['decoder_stage2a_bn[0][0]']     
+ on)                            64)                                                               
+                                                                                                  
+ decoder_stage2b_conv (Conv3D)  (None, 24, 24, 24,   110592      ['decoder_stage2a_relu[0][0]']   
+                                64)                                                               
+                                                                                                  
+ decoder_stage2b_bn (BatchNorma  (None, 24, 24, 24,   256        ['decoder_stage2b_conv[0][0]']   
+ lization)                      64)                                                               
+                                                                                                  
+ decoder_stage2b_relu (Activati  (None, 24, 24, 24,   0          ['decoder_stage2b_bn[0][0]']     
+ on)                            64)                                                               
+                                                                                                  
+ decoder_stage3_upsampling (UpS  (None, 48, 48, 48,   0          ['decoder_stage2b_relu[0][0]']   
+ ampling3D)                     64)                                                               
+                                                                                                  
+ decoder_stage3_concat (Concate  (None, 48, 48, 48,   0          ['decoder_stage3_upsampling[0][0]
+ nate)                          192)                             ',                               
+                                                                  'block2_conv2[0][0]']           
+                                                                                                  
+ decoder_stage3a_conv (Conv3D)  (None, 48, 48, 48,   165888      ['decoder_stage3_concat[0][0]']  
+                                32)                                                               
+                                                                                                  
+ decoder_stage3a_bn (BatchNorma  (None, 48, 48, 48,   128        ['decoder_stage3a_conv[0][0]']   
+ lization)                      32)                                                               
+                                                                                                  
+ decoder_stage3a_relu (Activati  (None, 48, 48, 48,   0          ['decoder_stage3a_bn[0][0]']     
+ on)                            32)                                                               
+                                                                                                  
+ decoder_stage3b_conv (Conv3D)  (None, 48, 48, 48,   27648       ['decoder_stage3a_relu[0][0]']   
+                                32)                                                               
+                                                                                                  
+ decoder_stage3b_bn (BatchNorma  (None, 48, 48, 48,   128        ['decoder_stage3b_conv[0][0]']   
+ lization)                      32)                                                               
+                                                                                                  
+ decoder_stage3b_relu (Activati  (None, 48, 48, 48,   0          ['decoder_stage3b_bn[0][0]']     
+ on)                            32)                                                               
+                                                                                                  
+ decoder_stage4_upsampling (UpS  (None, 96, 96, 96,   0          ['decoder_stage3b_relu[0][0]']   
+ ampling3D)                     32)                                                               
+                                                                                                  
+ decoder_stage4a_conv (Conv3D)  (None, 96, 96, 96,   13824       ['decoder_stage4_upsampling[0][0]
+                                16)                              ']                               
+                                                                                                  
+ decoder_stage4a_bn (BatchNorma  (None, 96, 96, 96,   64         ['decoder_stage4a_conv[0][0]']   
+ lization)                      16)                                                               
+                                                                                                  
+ decoder_stage4a_relu (Activati  (None, 96, 96, 96,   0          ['decoder_stage4a_bn[0][0]']     
+ on)                            16)                                                               
+                                                                                                  
+ decoder_stage4b_conv (Conv3D)  (None, 96, 96, 96,   6912        ['decoder_stage4a_relu[0][0]']   
+                                16)                                                               
+                                                                                                  
+ decoder_stage4b_bn (BatchNorma  (None, 96, 96, 96,   64         ['decoder_stage4b_conv[0][0]']   
+ lization)                      16)                                                               
+                                                                                                  
+ decoder_stage4b_relu (Activati  (None, 96, 96, 96,   0          ['decoder_stage4b_bn[0][0]']     
+ on)                            16)                                                               
+                                                                                                  
+ final_conv (Conv3D)            (None, 96, 96, 96,   2165        ['decoder_stage4b_relu[0][0]']   
+                                5)                                                                
+                                                                                                  
+ softmax (Activation)           (None, 96, 96, 96,   0           ['final_conv[0][0]']             
+                                5)                                                                
+                                                                                                  
+==================================================================================================
+Total params: 71,230,517
+Trainable params: 71,226,485
+Non-trainable params: 4,032
+__________________________________________________________________________________________________
+None

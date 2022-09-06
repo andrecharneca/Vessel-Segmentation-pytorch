@@ -1,0 +1,3 @@
+This whole folder has code adapted from Amir Aghdam on GiHub.
+
+Repo: https://github.com/AghdamAmir/3D-UNet.git
