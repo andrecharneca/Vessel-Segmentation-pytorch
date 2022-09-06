@@ -4,25 +4,7 @@ This implementation is based on the orginial 3D UNet paper and adapted to be use
 > Link to the paper: [https://arxiv.org/pdf/1606.06650v1.pdf](https://arxiv.org/pdf/1606.06650v1.pdf)
 
 ## Model Architecture
-
-The model architecture follows an encoder-decoder design which requires the input to be divisible by 16 due to its downsampling rate in the analysis path.
-
-![3D Unet](https://github.com/AghdamAmir/3D-UNet/blob/main/3D-UNET.png)
-
-## Dataset
-
-The Dataset class used for training the network is specially adapted to be used for the **Medical Segmentation Decathlon challenge**. 
-
-This dataset contains several segmentation tasks on various organs including **Liver Tumours, Brain Tumours, Hippocampus, Lung Tumours, Prostate, Cardiac,
-Pancreas Tumour, Colon Cancer, Hepatic Vessels and Spleen segmentation**.
-
-- Please also note that in the case which the task contain more than 2 classes (1: for foreground, 0: for background), you will need to modify the output
-of the model to reshape it to the size of the groundtruth mask in train.py file.
-
-> The link to the dataset: [http://medicaldecathlon.com/](http://medicaldecathlon.com/)
-
-- The Dataset class uses Monai package for reading MRI or CT and also applying augmentations on them in the transform.py file. You can modify the applied
-transformation in this file according to your preferences.
+3D UNet with a VGG16 backbone. Inspired by the segmentation-models-3d package.
 
 ## Configure the network
 
@@ -39,8 +21,6 @@ Please note that you need to change the path to the dataset directory in the con
 
 - NUM_CLASSES -> specifies the number of output channels for dispirate classes
 
-- BACKGROUND_AS_CLASS -> if True, the model treats background as a class
-
 - TRAIN_VAL_TEST_SPLIT -> delineates the ratios in which the dataset shoud be splitted. The length of the array should be 3.
 
 - TRAINING_EPOCH -> number of training epochs
@@ -51,14 +31,5 @@ Please note that you need to change the path to the dataset directory in the con
 
 - TRAIN_CUDA -> if True, moves the model and inference onto GPU
 
-- BCE_WEIGHTS -> the class weights for the Binary Cross Entropy loss
+- CE_WEIGHTS -> the class weights for the Categorical Cross Entropy loss
 
-## Training
-
-After configure config.py, you can start to train by running
-
-`python train.py`
-
-We also employ tensorboard to visualize the training process.
-
-`tensorboard --logdir=runs/`
