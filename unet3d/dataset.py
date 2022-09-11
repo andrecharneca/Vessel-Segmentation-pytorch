@@ -1,148 +1,140 @@
 import copy
+import nrrd
 import nibabel as nib
 import numpy as np
 import os
-import tarfile
-import json
+import glob
 from sklearn.utils import shuffle
 from torch.utils.data import Dataset, DataLoader
 import torch
 from torch.utils.data import random_split
-from unet3d.config import (
-    DATASET_PATH, TASK_ID, TRAIN_VAL_TEST_SPLIT,
-    TRAIN_BATCH_SIZE, VAL_BATCH_SIZE, TEST_BATCH_SIZE
-)
-
-#Utility function to extract .tar file formats into ./Datasets directory
-def ExtractTar(Directory):
-        try:
-            print("Extracting tar file ...")
-            tarfile.open(Directory).extractall('./Datasets')
-        except:
-            raise "File extraction failed!"
-        print("Extraction completed!")
-        return 
+from unet3d.config import *
+from torch.nn.functional import one_hot
+from scipy.ndimage import gaussian_filter
 
 
-#The dict representing segmentation tasks along with their IDs
-task_names = {
-    "01": "BrainTumour",
-    "02": "Heart",
-    "03": "Liver",
-    "04": "Hippocampus",
-    "05": "Prostate",
-    "06": "Lung",
-    "07": "Pancreas",
-    "08": "HepaticVessel",
-    "09": "Spleen",
-    "10": "Colon"
-}
 
-
-class MedicalSegmentationDecathlon(Dataset):
+def get_class_weights_torch(y_train, n_classes):
     """
-    The base dataset class for Decathlon segmentation tasks
-    -- __init__()
-    :param task_number -> represent the organ dataset ID (see task_names above for hints)
-    :param dir_path -> the dataset directory path to .tar files
-    :param transform -> optional - transforms to be applied on each instance
+    Computes class weights inversely proportional to #of voxels of that class
+    
+    Args:
+        y_train: one-hot encoded array of size #patches x patch_dimension x 5 (one-hot encoding)
+        n_classes: number of classes (including background)
+    Output:
+        class_weights: normalized vector
     """
-    def __init__(self, task_number, dir_path, split_ratios = [0.8, 0.1, 0.1], transforms = None, mode = None) -> None:
-        super(MedicalSegmentationDecathlon, self).__init__()
-        #Rectify the task ID representaion
-        self.task_number = str(task_number)
-        if len(self.task_number) == 1:
-            self.task_number = "0" + self.task_number
-        #Building the file name according to task ID
-        self.file_name = f"Task{self.task_number}_{task_names[self.task_number]}"
-        #Extracting .tar file
-        if not os.path.exists(os.path.join(os.getcwd(), "Datasets", self.file_name)):
-            ExtractTar(os.path.join(dir_path, f"{self.file_name}.tar"))
-        #Path to extracted dataset
-        self.dir = os.path.join(os.getcwd(), "Datasets", self.file_name)
-        #Meta data about the dataset
-        self.meta = json.load(open(os.path.join(self.dir, "dataset.json")))
-        self.splits = split_ratios
-        self.transform = transforms
-        #Calculating split number of images
-        num_training_imgs =  self.meta["numTraining"]
-        train_val_test = [int(x * num_training_imgs) for x in split_ratios]
-        if(sum(train_val_test) != num_training_imgs): train_val_test[0] += (num_training_imgs - sum(train_val_test))
-        train_val_test = [x for x in train_val_test if x!=0]
-        # train_val_test = [(x-1) for x in train_val_test]
-        self.mode = mode
-        #Spliting dataset
-        samples = self.meta["training"]
-        shuffle(samples)
-        self.train = samples[0:train_val_test[0]]
-        self.val = samples[train_val_test[0]:train_val_test[0] + train_val_test[1]]
-        self.test = samples[train_val_test[1]:train_val_test[1] + train_val_test[2]]
+    class_weights = []
+    
+    for i in range(n_classes):
+        # Inverse of Number of voxels belonging to class
+        class_weights.append(1/torch.count_nonzero(y_train[:,:,:,i]).item())
+    return class_weights
 
-    def set_mode(self, mode):
-        self.mode = mode
+def sample(probabilities, n=1):
+    """ Sample from probabability distribution of any dimension, n times"""
+    choices = np.prod(probabilities.shape)
+    index = np.random.choice(choices, size=n, p=probabilities.ravel())
+    return np.unravel_index(index, shape=probabilities.shape)
+
+
+class SAIADDataset(Dataset):
+    """SAIAD dataset."""
+
+    def __init__(self,  data_folder = DATASET_PATH,
+                        n_batches = TRAIN_BATCHES_PER_EPOCH,
+                        patch_size = PATCH_SIZE, 
+                        batch_size = TRAIN_BATCH_SIZE, 
+                        epochs = EPOCHS, 
+                        transform = None, 
+                        non_unif_sampling = True, 
+                        n_classes = NUM_CLASSES, 
+                        excl_patients = [], 
+                        load_data_to_memory = False,
+                        sigma=5, truncate=5):
+        """
+        Args:
+            data_folder (string): /path/to/patients/ 
+            n_batches (int): number of batches per epoch
+            patch_size (tuple): patch size to be used ex:(64,64,64)
+            batch_size (int): number of patches per batch
+
+        """
+        self.data_folder = data_folder
+        self.patch_size = patch_size
+        self.batch_size = batch_size
+        self.n_batches = n_batches
+        self.epochs = epochs
+        self.transform = transform
+        self.n_classes = n_classes
+        self.non_unif_sampling = non_unif_sampling
+        self.patients_list = self.get_patients_list(excl_patients)
+        self.load_data_to_memory = load_data_to_memory
+        self.loaded_scans, self.loaded_segms = self.load_data()
+        self.patients_probabilities = self.get_patients_probabilities(sigma, truncate)
+        self.patients_centers = self.get_patients_centers()
+        self.patients_centers_counter = [0 for i in range(len(self.patients_list))]
+        self.class_weights = []
+
+    def get_patients_list(self, excl_patients):
+        return list([name for name in glob.glob(self.data_folder+'*') 
+                    if not name.split('/')[-1] in excl_patients])
+                    
+    def load_data(self):
+        """ Load all training data (scans, segms) to memory """
+        scans = []
+        segms = []
+        self.loaded_segms = []
+        if self.load_data_to_memory:
+            for patient in self.patients_list:
+                scan,_ = nrrd.read(patient+'/scan.nrrd')
+                segm, _ = nrrd.read(patient+'/segm.nrrd')
+                scans.append(scan)
+                segms.append(segm)
+        return scans,segms
+
+    def get_patients_probabilities(self, sigma, truncate):
+        """ Returns list of probabilities distribution for sampling
+            NOTE: probably better to have the probabilities in each patient folder and just read"""
+
+        patients_probs = []
+        if self.non_unif_sampling == True:
+            print("Generating patients probabilities...")
+            for patient in self.patients_list:
+                segm,_ = nrrd.read(patient+'/segm.nrrd')
+                segm = torch.tensor(segm).int()
+
+                ## For class weights ##
+                segm_onehot = one_hot(segm.to(torch.int64), num_classes=self.n_classes)
+                weights = get_class_weights_torch(segm_onehot, n_classes=self.n_classes)
+
+                # Create 3D probability map based on segm, by blurring it and setting each class to certain weight
+                segm_blurred = segm.to(float)
+                for i in range(self.n_classes):
+                    segm_blurred[segm == i] = weights[i]
+
+                segm_blurred = torch.tensor(gaussian_filter(segm_blurred, sigma=sigma, truncate=truncate))
+                segm_blurred /= segm_blurred.sum()
+                patients_probs.append(segm_blurred)
+        return patients_probs
+    
+    def get_patients_centers(self):
+        """ 
+        Generate maximum number of possible centers per patient. 
+        This is much faster than doing it 1 at a time.
+        
+        Returns array = # patients x # samples x 3 ->(x,y,z)
+        """
+        patients_centers = []
+        if self.non_unif_sampling == True:
+            for i in range(len(self.patients_list)):
+                samp = sample(self.patients_probabilities[i], n=self.batch_size*self.n_batches*self.epochs)
+                samp = np.swapaxes(samp, 0, 1)
+                patients_centers.append(samp)
+        return patients_centers
 
     def __len__(self):
-        if self.mode == "train":
-            return len(self.train)
-        elif self.mode == "val":
-            return len(self.val)
-        elif self.mode == "test":
-            return len(self.test)
-        return self.meta["numTraining"]
+        return len(self.n_batches)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        #Obtaining image name by given index and the mode using meta data
-        if self.mode == "train":
-            name = self.train[idx]['image'].split('/')[-1]
-        elif self.mode == "val":
-            name = self.val[idx]['image'].split('/')[-1]
-        elif self.mode == "test":
-            name = self.test[idx]['image'].split('/')[-1]
-        else:
-            name = self.meta["training"][idx]['image'].split('/')[-1]
-        img_path = os.path.join(self.dir, "imagesTr", name)
-        label_path = os.path.join(self.dir, "labelsTr", name)
-        img_object = nib.load(img_path)
-        label_object = nib.load(label_path)
-        img_array = img_object.get_fdata()
-        #Converting to channel-first numpy array
-        img_array = np.moveaxis(img_array, -1, 0)
-        label_array = label_object.get_fdata()
-        label_array = np.moveaxis(label_array, -1, 0)
-        proccessed_out = {'name': name, 'image': img_array, 'label': label_array} 
-        if self.transform:
-            if self.mode == "train":
-                proccessed_out = self.transform[0](proccessed_out)
-            elif self.mode == "val":
-                proccessed_out = self.transform[1](proccessed_out)
-            elif self.mode == "test":
-                proccessed_out = self.transform[2](proccessed_out)
-            else:
-                proccessed_out = self.transform(proccessed_out)
-        
-        #The output numpy array is in channel-first format
-        return proccessed_out
-
-
-
-def get_train_val_test_Dataloaders(train_transforms, val_transforms, test_transforms):
-    """
-    The utility function to generate splitted train, validation and test dataloaders
-    
-    Note: all the configs to generate dataloaders in included in "config.py"
-    """
-
-    dataset = MedicalSegmentationDecathlon(task_number=TASK_ID, dir_path=DATASET_PATH, split_ratios=TRAIN_VAL_TEST_SPLIT, transforms=[train_transforms, val_transforms, test_transforms])
-
-    #Spliting dataset and building their respective DataLoaders
-    train_set, val_set, test_set = copy.deepcopy(dataset), copy.deepcopy(dataset), copy.deepcopy(dataset)
-    train_set.set_mode('train')
-    val_set.set_mode('val')
-    test_set.set_mode('test')
-    train_dataloader = DataLoader(dataset= train_set, batch_size= TRAIN_BATCH_SIZE, shuffle= False)
-    val_dataloader = DataLoader(dataset= val_set, batch_size= VAL_BATCH_SIZE, shuffle= False)
-    test_dataloader = DataLoader(dataset= test_set, batch_size= TEST_BATCH_SIZE, shuffle= False)
-    
-    return train_dataloader, val_dataloader, test_dataloader
+        pass

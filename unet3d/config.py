@@ -8,8 +8,7 @@ Dataset configurations:
     :param PATCH_SIZE -> volume of patch (x,y,z)
 
 """""
-DATASET_PATH = '/Home/Users/acharneca/WORK/SAIAD-project/Data/SAIAD_data_processed'
-TASK_ID = 9
+DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
@@ -25,8 +24,9 @@ Training configurations:
 """""
 TRAIN_VAL_TEST_SPLIT = [0.8, 0.1, 0.1]
 SPLIT_SEED = 42
-TRAINING_EPOCH = 100
+EPOCHS = 10
 TRAIN_BATCH_SIZE = 4
+TRAIN_BATCHES_PER_EPOCH = 10
 VAL_BATCH_SIZE = 1
 TEST_BATCH_SIZE = 1
 TRAIN_CUDA = True
