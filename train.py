@@ -36,7 +36,8 @@ train_dataset = SAIADDataset(
     )
 val_dataset = SAIADDataset(
     excl_patients=excl_patients_val,
-    load_data_to_memory=True
+    load_data_to_memory=True,
+    n_batches=VAL_BATCHES_PER_EPOCH
 )
 
 ## Training ##
@@ -64,14 +65,12 @@ for epoch in range(EPOCHS):
     
     valid_loss = 0.0
     model.eval()
-    for X_batch, y_batch in train_dataset:
-        image, ground_truth = scan_patches[i:i+TRAIN_BATCH_SIZE], segm_patches[i:i+TRAIN_BATCH_SIZE]
-        target = model(image.cuda())
-        loss = criterion(target,ground_truth.cuda())
+    for X_batch, y_batch in val_dataset:
+        target = model(X_batch)
+        loss = criterion(target,y_batch)
         valid_loss += loss.item()
     kbar.update(i, values=[("Validation loss", valid_loss)])
 
-        
     #writer.add_scalar("Loss/Train", train_loss / 120, epoch)
     #writer.add_scalar("Loss/Validation", valid_loss / 8, epoch)
     
