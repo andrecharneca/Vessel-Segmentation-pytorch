@@ -82,4 +82,4 @@ for epoch in range(EPOCHS):
         print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_valLoss{min_valid_loss}.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
