@@ -50,10 +50,11 @@ min_valid_loss = math.inf
 
 for epoch in range(EPOCHS):
     # progress bar
-    kbar = pkbar.Kbar(target=120, epoch=epoch, num_epochs=TRAINING_EPOCH, width=8, always_stateful=False)
+    kbar = pkbar.Kbar(target=120, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=False)
 
     train_loss = 0.0
     model.train()
+    i=0
     for X_batch, y_batch in train_dataset:    
         optimizer.zero_grad(set_to_none=True)
         target = model(X_batch)
@@ -62,6 +63,7 @@ for epoch in range(EPOCHS):
         optimizer.step()
         train_loss += loss.item()
         kbar.update(i, values=[("loss", train_loss)])
+        i+=1
     
     valid_loss = 0.0
     model.eval()
