@@ -1,0 +1,20 @@
+#!/bin/bash
+ 
+ 
+#$ -M andre.charnecaduarte@epfl.ch   # Email address for job notification
+ 
+#$ -m abe		 # Send mail when job begins, ends and aborts
+  
+#$ -q volta.q -l h_vmem=64G -l h_rt=8:00:00    # Specify queue
+ 
+#$ -N train_saiad	         # Specify job name
+ 
+#$ -o $JOB_NAME.$JOB_ID.out     #Output and error files
+#$ -e $JOB_NAME.$JOB_ID.err
+ 
+export HOME=$WORK
+module load anaconda
+conda activate saiad-pytorch
+cd Vessel-Segmentation-pytorch
+git pull
+python train.py

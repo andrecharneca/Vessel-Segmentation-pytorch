@@ -10,7 +10,7 @@ from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
 from torch.nn.functional import one_hot
 from torch.optim import Adam
-#from unet3d.unet3d_vgg16 import UNet3D_VGG16
+from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import get_headers
 from unet3d.dataset import SAIADDataset
 
@@ -50,7 +50,7 @@ min_valid_loss = math.inf
 
 for epoch in range(EPOCHS):
     # progress bar
-    kbar = pkbar.Kbar(target=120, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=False)
+    kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=False)
 
     train_loss = 0.0
     model.train()
