@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import pkbar
 import sys
+import pkbar
 from unet3d.config import *
 from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
@@ -30,7 +31,8 @@ print(excl_patients_val)
 ## Load dataset ##
 train_dataset = SAIADDataset(
     excl_patients=excl_patients_training,
-    load_data_to_memory=True
+    load_data_to_memory=True,
+    n_batches=TRAIN_BATCHES_PER_EPOCH
     )
 val_dataset = SAIADDataset(
     excl_patients=excl_patients_val,
@@ -40,3 +42,43 @@ val_dataset = SAIADDataset(
 ## Training ##
 model = UNet3D_VGG16(in_channels=IN_CHANNELS , num_classes= NUM_CLASSES).to(device)
 
+criterion = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
+optimizer = Adam(params=model.parameters())
+
+min_valid_loss = math.inf
+
+for epoch in range(EPOCHS):
+    # progress bar
+    kbar = pkbar.Kbar(target=120, epoch=epoch, num_epochs=TRAINING_EPOCH, width=8, always_stateful=False)
+
+    train_loss = 0.0
+    model.train()
+    for X_batch, y_batch in train_dataset:    
+        optimizer.zero_grad(set_to_none=True)
+        target = model(X_batch)
+        loss = criterion(target, y_batch)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+        kbar.update(i, values=[("loss", train_loss)])
+    
+    valid_loss = 0.0
+    model.eval()
+    for X_batch, y_batch in train_dataset:
+        image, ground_truth = scan_patches[i:i+TRAIN_BATCH_SIZE], segm_patches[i:i+TRAIN_BATCH_SIZE]
+        target = model(image.cuda())
+        loss = criterion(target,ground_truth.cuda())
+        valid_loss += loss.item()
+    kbar.update(i, values=[("Validation loss", valid_loss)])
+
+        
+    #writer.add_scalar("Loss/Train", train_loss / 120, epoch)
+    #writer.add_scalar("Loss/Validation", valid_loss / 8, epoch)
+    
+    #print(f'Epoch {epoch+1} \t\t Training Loss: {train_loss / 8} \t\t Validation Loss: {valid_loss / 8}')
+    
+    if min_valid_loss > valid_loss:
+        print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
+        min_valid_loss = valid_loss
+        # Saving State Dict
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_valLoss{min_valid_loss}.pth')
