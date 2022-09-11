@@ -1,3 +1,4 @@
+
 """
 3D U-Net: Learning Dense Volumetric Segmentation from Sparse Annotation
 Paper URL: https://arxiv.org/abs/1606.06650
@@ -133,3 +134,4 @@ if __name__ == '__main__':
     start_time = time.time()
     summary(model=model, input_size=(3, 16, 128, 128), batch_size=-1, device="cpu")
     print("--- %s seconds ---" % (time.time() - start_time))
+

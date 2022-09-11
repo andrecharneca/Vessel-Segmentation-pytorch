@@ -8,11 +8,11 @@ Dataset configurations:
     :param PATCH_SIZE -> volume of patch (x,y,z)
 
 """""
-DATASET_PATH = '../Data/SAIAD_data_processed'
+DATASET_PATH = '/Home/Users/acharneca/WORK/SAIAD-project/Data/SAIAD_data_processed'
 TASK_ID = 9
 IN_CHANNELS = 1
 NUM_CLASSES = 5
-PATCH_SIZE = (64,64,64)
+PATCH_SIZE = (96,96,96)
 """""
 Training configurations:
     :param TRAIN_VAL_TEST_SPLIT -> delineates the ratios in which the dataset shoud be splitted. The length of the array should be 3.
@@ -26,7 +26,7 @@ Training configurations:
 TRAIN_VAL_TEST_SPLIT = [0.8, 0.1, 0.1]
 SPLIT_SEED = 42
 TRAINING_EPOCH = 100
-TRAIN_BATCH_SIZE = 1
+TRAIN_BATCH_SIZE = 4
 VAL_BATCH_SIZE = 1
 TEST_BATCH_SIZE = 1
 TRAIN_CUDA = True
