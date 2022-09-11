@@ -2,7 +2,7 @@
 import numpy as np
 import glob
 import nrrd
-from tensorflow.keras.utils import to_categorical
+###from tensorflow.keras.utils import to_categorical
 
 def get_headers(data_path):
     """

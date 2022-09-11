@@ -76,10 +76,16 @@ class SAIADDataset(Dataset):
         self.patients_centers_counter = [0 for i in range(len(self.patients_list))]
         self.class_weights = []
 
+
+    def __len__(self):
+        return len(self.n_batches)
+
+
     def get_patients_list(self, excl_patients):
         return list([name for name in glob.glob(self.data_folder+'*') 
                     if not name.split('/')[-1] in excl_patients])
                     
+
     def load_data(self):
         """ Load all training data (scans, segms) to memory """
         scans = []
@@ -92,6 +98,7 @@ class SAIADDataset(Dataset):
                 scans.append(scan)
                 segms.append(segm)
         return scans,segms
+
 
     def get_patients_probabilities(self, sigma, truncate):
         """ Returns list of probabilities distribution for sampling
@@ -118,6 +125,7 @@ class SAIADDataset(Dataset):
                 patients_probs.append(segm_blurred)
         return patients_probs
     
+
     def get_patients_centers(self):
         """ 
         Generate maximum number of possible centers per patient. 
@@ -133,8 +141,65 @@ class SAIADDataset(Dataset):
                 patients_centers.append(samp)
         return patients_centers
 
-    def __len__(self):
-        return len(self.n_batches)
+    def __get_patches_from_patient(self, i_patient):
+        """ Get patch (scan and segm) from patient 
+        Args:
+            i_patient: index of the patient for the patch
+        Outputs:
+            patch_scan: patch of the scan with shape=x,y,z
+            patch_segm: one-hot patch of the segm with shape=n_classes,x,y,z"""
+        if self.load_data_to_memory:
+            scan = self.loaded_scans[i_patient]
+            segm = self.loaded_segms[i_patient]
+        else:
+            scan, _ = nrrd.read(self.patients_list[i_patient]+'/scan.nrrd')
+            segm, _ = nrrd.read(self.patients_list[i_patient]+'/segm.nrrd')
+
+        scan_shape = scan.shape
+
+        if self.non_unif_sampling == True:
+            # Non uniform sampling
+            cx, cy, cz = self.patients_centers[i_patient][self.patients_centers_counter[i_patient]]
+            self.patients_centers_counter[i_patient]+=1
+        else:
+            #Uniform sampling
+            cx = np.random.randint(0,scan.shape[0])
+            cy = np.random.randint(0,scan.shape[1])
+            cz = np.random.randint(0,scan.shape[2])
+            
+        # Get valid bbox
+        bbox_x = [max(cx - self.patch_size[0]//2, 0), min(scan_shape[0], cx+self.patch_size[0]//2)]
+        bbox_y = [max(cy - self.patch_size[1]//2, 0), min(scan_shape[1], cy+self.patch_size[1]//2)]
+        bbox_z = [max(cz - self.patch_size[2]//2, 0), min(scan_shape[2], cz+self.patch_size[2]//2)]
+
+        # Get padding amounts
+        pad_x = (-min(cx - self.patch_size[0]//2,0), max(self.patch_size[0]//2 + cx - scan_shape[0], 0))
+        pad_y = (-min(cy - self.patch_size[1]//2,0), max(self.patch_size[1]//2 + cy - scan_shape[1], 0))
+        pad_z = (-min(cz - self.patch_size[2]//2,0), max(self.patch_size[2]//2 + cz - scan_shape[2], 0))
+
+        patch_scan = scan[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]]
+        patch_segm = segm[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]]
+
+        patch_scan = np.pad(patch_scan,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
+        patch_segm = np.pad(patch_segm,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
+        
+        patch_scan = torch.tensor(patch_scan)
+        patch_segm = one_hot(torch.tensor(patch_segm, dtype=torch.int64), num_classes=self.n_classes)
+        return patch_scan, patch_segm
+
 
     def __getitem__(self, idx):
-        pass
+        # Get random patient indexes
+        patient_indexes = torch.randint(0, len(self.patients_list), (self.batch_size,))
+        
+        X_batch = torch.zeros(
+            (self.batch_size,) + self.patch_size, dtype=torch.float32
+            )
+        y_batch = torch.zeros(
+            (self.batch_size,) + self.patch_size + (self.n_classes,), dtype=torch.float32
+        )
+    
+        for i in range(self.batch_size):
+            X_batch[i], y_batch[i] = self.__get_patches_from_patient(patient_indexes[i].item())
+
+        return X_batch, y_batch
