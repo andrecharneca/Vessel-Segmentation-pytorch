@@ -79,7 +79,7 @@ min_valid_loss = math.inf
 
 for epoch in range(EPOCHS):
     # progress bar
-    kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH+VAL_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=False)
+    kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH+VAL_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=True)
 
     train_loss = 0.0
     model.train()
