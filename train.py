@@ -105,7 +105,7 @@ for epoch in range(EPOCHS):
             valid_loss += loss.item()
             kbar.update(i, values=[("Validation loss", valid_loss)])
             i+=1
-
+    kbar.update(i, values=[("Validation loss", valid_loss)])
         
     if min_valid_loss > valid_loss:
         print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
