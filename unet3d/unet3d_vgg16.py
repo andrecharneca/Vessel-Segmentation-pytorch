@@ -163,17 +163,20 @@ class FinalBlock(nn.Module):
     :return -> Tensor
     """
 
-    def __init__(self, in_channels, num_classes) -> None:
+    def __init__(self, in_channels, num_classes, use_softmax=False) -> None:
         super(FinalBlock, self).__init__()
         self.conv = nn.Conv3d(in_channels=in_channels, out_channels=num_classes, kernel_size=(3,3,3), padding='same')
         self.softmax = nn.Softmax()
+        self.use_softmax = use_softmax
         
         
     def forward(self, input):
         #final conv
         out = self.conv(input)
-        #softmax - class probabilities
-        out = self.softmax(out)
+        if self.use_softmax:
+            #softmax - class probabilities
+            # This doesn't need to be used before torch.CrossEntropyLoss
+            out = self.softmax(out)
         return out
         
         
@@ -190,7 +193,7 @@ class UNet3D_VGG16(nn.Module):
     :return -> Tensor
     """
     
-    def __init__(self, in_channels, num_classes, level_channels=[64, 128, 256, 512, 512]) -> None:
+    def __init__(self, in_channels, num_classes, level_channels=[64, 128, 256, 512, 512], use_softmax_end=False) -> None:
         super(UNet3D_VGG16, self).__init__()
         level_1_chnls, level_2_chnls, level_3_chnls, level_4_chnls, level_5_chnls = level_channels[0], level_channels[1], level_channels[2],level_channels[3],level_channels[4]
  
@@ -210,7 +213,7 @@ class UNet3D_VGG16(nn.Module):
         self.decoder_block2 = UpConv3DBlock(in_channels=last_encoder_channels//8, res_channels=level_2_chnls)
         self.decoder_block1 = UpConv3DBlock(in_channels=last_encoder_channels//16, res_channels=0)
 
-        self.final_block = FinalBlock(in_channels=last_encoder_channels//32, num_classes=num_classes)
+        self.final_block = FinalBlock(in_channels=last_encoder_channels//32, num_classes=num_classes, use_softmax=use_softmax_end)
 
 
     

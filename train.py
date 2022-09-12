@@ -67,7 +67,11 @@ train_dataloader = WrappedDataLoader(train_dataloader, to_device, device)
 
 
 ## Model ##
-model = UNet3D_VGG16(in_channels=IN_CHANNELS , num_classes=NUM_CLASSES).to(device)
+model = UNet3D_VGG16(
+    in_channels=IN_CHANNELS , 
+    num_classes=NUM_CLASSES,
+    use_softmax_end=USE_SOFTMAX_END
+    ).to(device)
 
 loss_fn = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
 optimizer = Adam(params=model.parameters(), lr=LR)
