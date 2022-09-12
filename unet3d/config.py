@@ -13,7 +13,7 @@ DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
-NUM_WORKERS = 0
+NUM_WORKERS = 1
 
 """""
 Training configurations:
