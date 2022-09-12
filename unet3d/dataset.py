@@ -58,6 +58,10 @@ class SAIADDataset(Dataset):
             n_batches (int): number of batches per epoch
             patch_size (tuple): patch size to be used ex:(64,64,64)
             batch_size (int): number of patches per batch
+            epochs (int): number of epochs
+            transform (Compose): data augmentations
+            non_unif_sampling (bool): if True, use the non uniform patch sampling, if False use uniform
+            
 
         """
         self.data_folder = data_folder
@@ -78,7 +82,8 @@ class SAIADDataset(Dataset):
 
 
     def __len__(self):
-        return self.n_batches
+        """Return total number of patches to be used"""
+        return self.n_batches*self.batch_size
 
 
     def get_patients_list(self, excl_patients):
@@ -183,8 +188,8 @@ class SAIADDataset(Dataset):
         patch_scan = np.pad(patch_scan,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
         patch_segm = np.pad(patch_segm,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
         
-        patch_scan = torch.tensor(patch_scan)
-        patch_segm = one_hot(torch.tensor(patch_segm, dtype=torch.int64), num_classes=self.n_classes)
+        patch_scan = torch.unsqueeze(torch.tensor(patch_scan), 0)
+        patch_segm = one_hot(torch.tensor(patch_segm, dtype=torch.int64), num_classes=self.n_classes).permute(3,0,1,2)
         return patch_scan, patch_segm
 
 
