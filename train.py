@@ -69,7 +69,7 @@ train_dataloader = WrappedDataLoader(train_dataloader, to_device, device)
 ## Model ##
 model = UNet3D_VGG16(in_channels=IN_CHANNELS , num_classes=NUM_CLASSES).to(device)
 
-criterion = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
+loss_fn = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
 optimizer = Adam(params=model.parameters(), lr=LR)
 
 
@@ -88,7 +88,7 @@ for epoch in range(EPOCHS):
     with torch.cuda.amp.autocast():
         for X_batch, y_batch in train_dataloader:             
             target = model(X_batch)
-            loss = criterion(target, y_batch)
+            loss = loss_fn(target, y_batch)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
@@ -98,13 +98,13 @@ for epoch in range(EPOCHS):
     
     valid_loss = 0.0
     model.eval()
-    #with torch.no_grad():
-    for X_batch, y_batch in val_dataloader:
-        target = model(X_batch)
-        loss = criterion(target,y_batch)
-        valid_loss += loss.item()
-        kbar.update(i, values=[("Validation loss", valid_loss)])
-        i+=1
+    with torch.no_grad():
+        for X_batch, y_batch in val_dataloader:
+            target = model(X_batch)
+            loss = loss_fn(target,y_batch)
+            valid_loss += loss.item()
+            kbar.update(i, values=[("Validation loss", valid_loss)])
+            i+=1
 
         
     if min_valid_loss > valid_loss:
