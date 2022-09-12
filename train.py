@@ -88,17 +88,16 @@ for epoch in range(EPOCHS):
     train_loss = 0.0
     model.train()
     i=0
-    # Autocasting for mixed precision
-    with torch.cuda.amp.autocast():
-        for X_batch, y_batch in train_dataloader:             
-            target = model(X_batch)
-            loss = loss_fn(target, y_batch)
-            optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-            kbar.update(i, values=[("loss", train_loss)])
-            i+=1
+    
+    for X_batch, y_batch in train_dataloader:             
+        target = model(X_batch)
+        loss = loss_fn(target, y_batch)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
+        kbar.update(i, values=[("loss", train_loss)])
+        i+=1
     
     valid_loss = 0.0
     model.eval()
