@@ -87,9 +87,9 @@ for epoch in range(EPOCHS):
     # Autocasting for mixed precision
     with torch.cuda.amp.autocast():
         for X_batch, y_batch in train_dataloader:             
-            optimizer.zero_grad(set_to_none=True)
             target = model(X_batch)
             loss = criterion(target, y_batch)
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -98,14 +98,14 @@ for epoch in range(EPOCHS):
     
     valid_loss = 0.0
     model.eval()
-    with torch.no_grad():
-        for X_batch, y_batch in val_dataloader:
-            target = model(X_batch)
-            loss = criterion(target,y_batch)
-            valid_loss += loss.item()
-            i+=1
+    #with torch.no_grad():
+    for X_batch, y_batch in val_dataloader:
+        target = model(X_batch)
+        loss = criterion(target,y_batch)
+        valid_loss += loss.item()
+        kbar.update(i, values=[("Validation loss", valid_loss)])
+        i+=1
 
-    kbar.update(i, values=[("Validation loss", valid_loss)])
         
     if min_valid_loss > valid_loss:
         print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
