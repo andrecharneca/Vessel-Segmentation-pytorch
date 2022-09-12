@@ -32,12 +32,12 @@ print(excl_patients_val)
 train_dataset = SAIADDataset(
     excl_patients=excl_patients_training,
     load_data_to_memory=True,
-    n_batches=TRAIN_BATCHES_PER_EPOCH
+    n_batches=TRAIN_BATCHES_PER_EPOCH,
     )
 val_dataset = SAIADDataset(
     excl_patients=excl_patients_val,
     load_data_to_memory=True,
-    n_batches=VAL_BATCHES_PER_EPOCH
+    n_batches=VAL_BATCHES_PER_EPOCH,
 )
 
 ## Training ##

@@ -78,7 +78,7 @@ class SAIADDataset(Dataset):
 
 
     def __len__(self):
-        return len(self.n_batches)
+        return self.n_batches
 
 
     def get_patients_list(self, excl_patients):
@@ -146,7 +146,7 @@ class SAIADDataset(Dataset):
         Args:
             i_patient: index of the patient for the patch
         Outputs:
-            patch_scan: patch of the scan with shape=x,y,z
+            patch_scan: patch of the scan with shape=1,x,y,z
             patch_segm: one-hot patch of the segm with shape=n_classes,x,y,z"""
         if self.load_data_to_memory:
             scan = self.loaded_scans[i_patient]
@@ -189,17 +189,10 @@ class SAIADDataset(Dataset):
 
 
     def __getitem__(self, idx):
+        """Returns 1 scan patch and 1 segm patch"""
         # Get random patient indexes
-        patient_indexes = torch.randint(0, len(self.patients_list), (self.batch_size,))
-        
-        X_batch = torch.zeros(
-            (self.batch_size,) + self.patch_size, dtype=torch.float32
-            )
-        y_batch = torch.zeros(
-            (self.batch_size,) + self.patch_size + (self.n_classes,), dtype=torch.float32
-        )
+        patient_idx = torch.randint(0, len(self.patients_list), (1,))
     
-        for i in range(self.batch_size):
-            X_batch[i], y_batch[i] = self.__get_patches_from_patient(patient_indexes[i].item())
+        X_batch, y_batch = self.__get_patches_from_patient(patient_idx.item())
 
         return X_batch, y_batch
