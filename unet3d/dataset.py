@@ -5,6 +5,7 @@ import numpy as np
 import os
 import glob
 from sklearn.utils import shuffle
+from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 import torch
 from torch.utils.data import random_split
@@ -45,7 +46,7 @@ class SAIADDataset(Dataset):
                         n_batches = TRAIN_BATCHES_PER_EPOCH,
                         patch_size = PATCH_SIZE, 
                         batch_size = TRAIN_BATCH_SIZE, 
-                        epochs = EPOCHS, 
+                        epochs = EPOCHS,
                         transform = None, 
                         non_unif_sampling = True, 
                         n_classes = NUM_CLASSES, 
@@ -61,7 +62,10 @@ class SAIADDataset(Dataset):
             epochs (int): number of epochs
             transform (Compose): data augmentations
             non_unif_sampling (bool): if True, use the non uniform patch sampling, if False use uniform
-            
+            n_classes (int): number of classes including background
+            excl_patients (list): patients to exclude from training, ex. ['SAIAD 1', 'SAIAD 2']
+            load_data_to_memory (bool): if True, loads all patients scans and segms to memory, faster but more RAM used
+            sigma, truncate (float): params for blurring in the creation of sampling distribution
 
         """
         self.data_folder = data_folder
@@ -106,28 +110,37 @@ class SAIADDataset(Dataset):
 
 
     def get_patients_probabilities(self, sigma, truncate):
-        """ Returns list of probabilities distribution for sampling
-            NOTE: probably better to have the probabilities in each patient folder and just read"""
+        """ Returns list of probabilities distribution for sampling.
+            It also saves the distribution in each patient's folder"""
 
         patients_probs = []
         if self.non_unif_sampling == True:
-            print("Generating patients probabilities...")
-            for patient in self.patients_list:
-                segm,_ = nrrd.read(patient+'/segm.nrrd')
-                segm = torch.tensor(segm).int()
+            print("Fetching patients probabilities...")
+            
+            for patient in tqdm(self.patients_list):
+                if len(glob.glob(patient+'/sampling_dist.npy'))>=1:
+                    # Prob already exists
+                    patients_probs.append(np.load(patient+'/sampling_dist.npy'))
+                    
+                else:
+                    segm,_ = nrrd.read(patient+'/segm.nrrd')
+                    segm = torch.tensor(segm).int()
 
-                ## For class weights ##
-                segm_onehot = one_hot(segm.to(torch.int64), num_classes=self.n_classes)
-                weights = get_class_weights_torch(segm_onehot, n_classes=self.n_classes)
+                    ## For class weights ##
+                    segm_onehot = one_hot(segm.to(torch.int64), num_classes=self.n_classes)
+                    weights = get_class_weights_torch(segm_onehot, n_classes=self.n_classes)
 
-                # Create 3D probability map based on segm, by blurring it and setting each class to certain weight
-                segm_blurred = segm.to(float)
-                for i in range(self.n_classes):
-                    segm_blurred[segm == i] = weights[i]
+                    # Create 3D probability map based on segm, by blurring it and setting each class to certain weight
+                    segm_blurred = segm.to(float)
+                    for i in range(self.n_classes):
+                        segm_blurred[segm == i] = weights[i]
 
-                segm_blurred = torch.tensor(gaussian_filter(segm_blurred, sigma=sigma, truncate=truncate))
-                segm_blurred /= segm_blurred.sum()
-                patients_probs.append(segm_blurred)
+                    segm_blurred = torch.tensor(gaussian_filter(segm_blurred, sigma=sigma, truncate=truncate))
+                    segm_blurred /= segm_blurred.sum()
+                    patients_probs.append(segm_blurred)
+                    with open(patient+'/sampling_dist.npy', 'wb') as f:
+                        np.save(f, segm_blurred)
+                        
         return patients_probs
     
 
@@ -200,4 +213,25 @@ class SAIADDataset(Dataset):
     
         X_batch, y_batch = self.__get_patches_from_patient(patient_idx.item())
 
-        return X_batch, y_batch
+        return X_batch.float(), y_batch.float()
+
+    
+    
+class WrappedDataLoader:
+    """ Wrapper to output batches to GPU as they come"""
+    def __init__(self, dl, func, args):
+        self.dl = dl
+        self.func = func
+        self.args = args
+
+    def __len__(self):
+        return len(self.dl)
+
+    def __iter__(self):
+        batches = iter(self.dl)
+        for b in batches:
+            yield (self.func(*b, self.args))
+            
+def to_device(x, y, dev):
+    """ Send batch to device"""
+    return x.to(dev), y.to(dev)

@@ -12,7 +12,7 @@ from torch.nn.functional import one_hot
 from torch.optim import Adam
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import get_headers
-from unet3d.dataset import SAIADDataset
+from unet3d.dataset import SAIADDataset, WrappedDataLoader, to_device
 from torch.utils.data import DataLoader
 
 
@@ -29,7 +29,7 @@ device = torch.device('cuda')
 excl_patients_training = ['SAIAD 15', 'SAIAD 11'] #patients for validation/testing
 excl_patients_val = list(set(patient_names) - set(excl_patients_training))
 
-print(excl_patients_val)
+print("Training with val patients:", excl_patients_training)
 
 
 
@@ -39,28 +39,35 @@ train_dataset = SAIADDataset(
     load_data_to_memory=True,
     n_batches=TRAIN_BATCHES_PER_EPOCH,
     )
-train_dataloader = DataLoader(
-    train_dataset, 
-    shuffle=False, 
-    pin_memory=True, 
-    num_workers=NUM_WORKERS
-    )
 val_dataset = SAIADDataset(
     excl_patients=excl_patients_val,
     load_data_to_memory=True,
     n_batches=VAL_BATCHES_PER_EPOCH,
 )
+
+train_dataloader = DataLoader(
+    train_dataset, 
+    batch_size=TRAIN_BATCH_SIZE,
+    shuffle=False, 
+    pin_memory=True, 
+    num_workers=NUM_WORKERS
+    )
 val_dataloader = DataLoader(
     val_dataset, 
+    batch_size=VAL_BATCH_SIZE,
     shuffle=False, 
     pin_memory=True, 
     num_workers=NUM_WORKERS
     )
 
+val_dataloader = WrappedDataLoader(val_dataloader, to_device, device)
+train_dataloader = WrappedDataLoader(train_dataloader, to_device, device)
+
+
 
 
 ## Model ##
-model = UNet3D_VGG16(in_channels=IN_CHANNELS , num_classes= NUM_CLASSES).to(device)
+model = UNet3D_VGG16(in_channels=IN_CHANNELS , num_classes=NUM_CLASSES).to(device)
 
 criterion = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
 optimizer = Adam(params=model.parameters(), lr=LR)
@@ -72,14 +79,14 @@ min_valid_loss = math.inf
 
 for epoch in range(EPOCHS):
     # progress bar
-    kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=16, always_stateful=False)
+    kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=False)
 
     train_loss = 0.0
     model.train()
     i=0
     # Autocasting for mixed precision
     with torch.cuda.amp.autocast():
-        for X_batch, y_batch in train_dataset:    
+        for X_batch, y_batch in train_dataloader:             
             optimizer.zero_grad(set_to_none=True)
             target = model(X_batch)
             loss = criterion(target, y_batch)
@@ -92,7 +99,7 @@ for epoch in range(EPOCHS):
     valid_loss = 0.0
     model.eval()
     with torch.no_grad():
-        for X_batch, y_batch in val_dataset:
+        for X_batch, y_batch in val_dataloader:
             target = model(X_batch)
             loss = criterion(target,y_batch)
             valid_loss += loss.item()
