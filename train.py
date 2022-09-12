@@ -94,7 +94,6 @@ for epoch in range(EPOCHS):
             optimizer.step()
             train_loss += loss.item()
             kbar.update(i, values=[("loss", train_loss)])
-            print("\n   ",train_loss)
             i+=1
     
     valid_loss = 0.0
