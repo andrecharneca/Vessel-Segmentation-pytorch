@@ -43,7 +43,7 @@ train_dataloader = DataLoader(
     train_dataset, 
     shuffle=False, 
     pin_memory=True, 
-    num_workers=8
+    num_workers=NUM_WORKERS
     )
 val_dataset = SAIADDataset(
     excl_patients=excl_patients_val,
@@ -54,7 +54,7 @@ val_dataloader = DataLoader(
     val_dataset, 
     shuffle=False, 
     pin_memory=True, 
-    num_workers=8
+    num_workers=NUM_WORKERS
     )
 
 
