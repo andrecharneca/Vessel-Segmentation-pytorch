@@ -165,7 +165,7 @@ class FinalBlock(nn.Module):
 
     def __init__(self, in_channels, num_classes, use_softmax=False) -> None:
         super(FinalBlock, self).__init__()
-        self.conv = nn.Conv3d(in_channels=in_channels, out_channels=num_classes, kernel_size=(3,3,3), padding='same')
+        self.conv = nn.Conv3d(in_channels=in_channels, out_channels=num_classes, kernel_size=(1,1,1), padding='same')
         self.softmax = nn.Softmax()
         self.use_softmax = use_softmax
         
