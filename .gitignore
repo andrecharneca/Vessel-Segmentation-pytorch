@@ -2,3 +2,4 @@ utils/.DS_Store
 .DS_Store
 utils/__pycache__/Other.cpython-38.pyc
 *.pyc
+runs/
