@@ -1,3 +1,5 @@
+#
+
 from json import load
 import math
 import numpy as np
@@ -14,6 +16,8 @@ from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import get_headers
 from unet3d.dataset import SAIADDataset, WrappedDataLoader, to_device
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
 
 
 torch.manual_seed(0)
@@ -87,9 +91,9 @@ for epoch in range(EPOCHS):
 
     train_loss = 0.0
     model.train()
-    i=0
+    i=1
     
-    for X_batch, y_batch in train_dataloader:             
+    for X_batch, y_batch in train_dataloader:  
         target = model(X_batch)
         loss = loss_fn(target, y_batch)
         optimizer.zero_grad(set_to_none=True)
@@ -98,7 +102,10 @@ for epoch in range(EPOCHS):
         train_loss += loss.item()
         kbar.update(i, values=[("loss", train_loss)])
         i+=1
-    
+        
+    # Tensorboard #
+    writer.add_scalar("Loss/train", train_loss, epoch)
+
     valid_loss = 0.0
     model.eval()
     with torch.no_grad():
@@ -108,10 +115,16 @@ for epoch in range(EPOCHS):
             valid_loss += loss.item()
             kbar.update(i, values=[("Validation loss", valid_loss)])
             i+=1
-    kbar.update(i, values=[("Validation loss", valid_loss)])
-        
+            
+    # Tensorboard #
+    writer.add_scalar("Loss/val", valid_loss, epoch)
+
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
         torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
+
+# Tensorboard #
+writer.flush()
+writer.close()
