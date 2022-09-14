@@ -3,3 +3,4 @@ utils/.DS_Store
 utils/__pycache__/Other.cpython-38.pyc
 *.pyc
 runs/
+.DS_Store
