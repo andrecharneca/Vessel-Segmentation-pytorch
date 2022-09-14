@@ -1,4 +1,5 @@
 import copy
+from unittest.mock import patch
 import nrrd
 import nibabel as nib
 import numpy as np
@@ -211,9 +212,10 @@ class SAIADDataset(Dataset):
         # Get random patient indexes
         patient_idx = torch.randint(0, len(self.patients_list), (1,))
     
-        X_batch, y_batch = self.__get_patches_from_patient(patient_idx.item())
-
-        return X_batch.float(), y_batch.float()
+        patch_scan, patch_segm = self.__get_patches_from_patient(patient_idx.item())
+        #out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
+        #return self.transform(out)
+        return patch_scan.float(), patch_segm.float()
 
     
     

@@ -16,10 +16,11 @@ NUM_WORKERS = 2
 
 """""
 Training configurations:
-    :param TRAINING_EPOCH -> number of training epochs
+    :param EPOCHS -> number of training epochs
     :param LR -> learning rate
-    :param VAL_BATCH_SIZE -> specifies the batch size of the training DataLoader
-    :param TEST_BATCH_SIZE -> specifies the batch size of the test DataLoader
+    :param [X]_BATCH_SIZE -> specifies the batch size of [X] in the DataLoader
+    :param [X]_BATCHES_PER_EPOCH -> number of batches per epoch
+    :param AUG_PROB -> probability of each of the data augmentation transforms being applied to a patch
     :param CE_WEIGHTS -> the class weights for the Categorical Cross Entropy loss
 """""
 
@@ -28,6 +29,7 @@ LR = 0.0001
 TRAIN_BATCH_SIZE = 8
 TRAIN_BATCHES_PER_EPOCH = 40
 VAL_BATCHES_PER_EPOCH = 10
+AUG_PROB = 0.3
 VAL_BATCH_SIZE = 8
 TEST_BATCH_SIZE = 8
 CE_WEIGHTS = [0.2,1,10,6,1]
