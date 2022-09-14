@@ -74,7 +74,7 @@ train_dataloader = WrappedDataLoader(train_dataloader, to_device, device)
 model = UNet3D_VGG16(
     in_channels=IN_CHANNELS , 
     num_classes=NUM_CLASSES,
-    use_softmax_end=USE_SOFTMAX_END
+    use_softmax_end=False #set this to false for training with CELoss
     ).to(device)
 
 loss_fn = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
@@ -94,12 +94,12 @@ for epoch in range(EPOCHS):
     i=1
     
     for X_batch, y_batch in train_dataloader:  
-        target = model(X_batch)
-        loss = loss_fn(target, y_batch)
+        pred = model(X_batch)
+        loss = loss_fn(pred, y_batch)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item()
+        train_loss += loss.cpu().detach()
         kbar.update(i, values=[("loss", train_loss)])
         i+=1
         
@@ -110,9 +110,9 @@ for epoch in range(EPOCHS):
     model.eval()
     with torch.no_grad():
         for X_batch, y_batch in val_dataloader:
-            target = model(X_batch)
-            loss = loss_fn(target,y_batch)
-            valid_loss += loss.item()
+            pred = model(X_batch)
+            loss = loss_fn(pred,y_batch)
+            valid_loss += loss.cpu().detach()
             kbar.update(i, values=[("Validation loss", valid_loss)])
             i+=1
             

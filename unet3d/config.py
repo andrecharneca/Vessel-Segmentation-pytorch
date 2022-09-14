@@ -6,7 +6,6 @@ Dataset configurations:
     :param NUM_CLASSES -> specifies the number of output channels for classes (including background as class)
     :param PATCH_SIZE -> volume of patch (x,y,z)
     :param NUM_WORKERS -> num_workers param for torch DataLoader (best one for Mesocentre seems to be 2)
-    :param USE_SOFTMAX_END -> use softmax after final conv. Set to false if loss=torch.CrossEntropyLoss
 
 """""
 DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
@@ -14,7 +13,6 @@ IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
 NUM_WORKERS = 2
-USE_SOFTMAX_END = False
 
 """""
 Training configurations:
