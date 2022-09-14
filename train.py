@@ -24,6 +24,7 @@ writer = SummaryWriter()
 
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
+nvsmi = nvidia_smi.getInstance()
 
 
 
