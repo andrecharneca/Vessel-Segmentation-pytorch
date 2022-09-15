@@ -217,7 +217,7 @@ class SAIADDataset(Dataset):
             out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
             return self.transform(out)['patch_scan'].float(), self.transform(out)['patch_segm'].float()
         else:
-            return patch_scan.float(), patch_segm.float()
+            return patch_scan.type(torch.float16), patch_segm.type(torch.float16)
 
 
 ### NOTE: below isn't needed anymore, if using the Tensord transform 
