@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from pynvml.smi import nvidia_smi
 
-writer = SummaryWriter()
+writer = SummaryWriter(log_dir='runs/history')
 
 
 torch.manual_seed(0)
