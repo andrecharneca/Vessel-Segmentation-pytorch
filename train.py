@@ -112,7 +112,7 @@ for epoch in range(EPOCHS):
         batch_num+=1
         
     # Tensorboard #
-    writer.add_scalar("Loss/train", train_loss, epoch)
+    writer.add_scalar("Loss/train", train_loss/batch_num, epoch)
 
     valid_loss = 0.0
     model.eval()
@@ -125,17 +125,16 @@ for epoch in range(EPOCHS):
             kbar.update(i, values=[("Validation loss", valid_loss/batch_num)])
             i+=1
             batch_num+=1
-    valid_loss /= batch_num
             
     # Tensorboard #
-    writer.add_scalar("Loss/val", valid_loss, epoch)
+    writer.add_scalar("Loss/val", valid_loss/batch_num, epoch)
 
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
         torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
-    elif (epochs+1)%EPOCHS//10 == 0:
+    elif (epochs+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
         torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
 

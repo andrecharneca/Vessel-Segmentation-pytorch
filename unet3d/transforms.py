@@ -14,7 +14,7 @@ train_transform_cuda = Compose(
     [   
         RandFlipd(keys=KEYS, prob=AUG_PROB, spatial_axis=0),
         RandGaussianNoised(keys=KEYS, prob=AUG_PROB, mean=0.0, std=0.1),
-        RandAdjustContrastd(keys=KEYS, prob=AUG_PROB, gamma=(0,3)),
-        ToTensord(keys=KEYS, device='cuda')
+        RandAdjustContrastd(keys=KEYS, prob=AUG_PROB, gamma=(0.5,2)),
+        #ToTensord(keys=KEYS, device='mps')###change to cuda
     ]
 )

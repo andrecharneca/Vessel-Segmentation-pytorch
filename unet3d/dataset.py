@@ -213,12 +213,14 @@ class SAIADDataset(Dataset):
         patient_idx = torch.randint(0, len(self.patients_list), (1,))
     
         patch_scan, patch_segm = self.__get_patches_from_patient(patient_idx.item())
-        #out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
-        #return self.transform(out)
-        return patch_scan.float(), patch_segm.float()
+        if self.transform:
+            out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
+            return self.transform(out)['patch_scan'].float(), self.transform(out)['patch_segm'].float()
+        else:
+            return patch_scan.float(), patch_segm.float()
 
-    
-    
+
+### NOTE: below isn't needed anymore, if using the Tensord transform 
 class WrappedDataLoader:
     """ Wrapper to output batches to GPU as they come"""
     def __init__(self, dl, func, args):
