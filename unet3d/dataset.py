@@ -196,14 +196,14 @@ class SAIADDataset(Dataset):
         pad_y = (-min(cy - self.patch_size[1]//2,0), max(self.patch_size[1]//2 + cy - scan_shape[1], 0))
         pad_z = (-min(cz - self.patch_size[2]//2,0), max(self.patch_size[2]//2 + cz - scan_shape[2], 0))
 
-        patch_scan = scan[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]]
-        patch_segm = segm[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]]
+        patch_scan = torch.tensor(scan[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]])
+        patch_segm = torch.tensor(segm[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]], dtype=torch.int64)
 
-        patch_scan = np.pad(patch_scan,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
-        patch_segm = np.pad(patch_segm,(pad_x, pad_y, pad_z), 'constant', constant_values=0)
+        patch_scan = torch.nn.functional.pad(patch_scan, pad_x + pad_y + pad_z, 'constant', 0)
+        patch_segm = torch.nn.functional.pad(patch_segm, pad_x + pad_y + pad_z, 'constant', 0)
         
-        patch_scan = torch.unsqueeze(torch.tensor(patch_scan), 0)
-        patch_segm = one_hot(torch.tensor(patch_segm, dtype=torch.int64), num_classes=self.n_classes).permute(3,0,1,2)
+        patch_scan = torch.unsqueeze(patch_scan, 0)
+        patch_segm = one_hot(patch_segm, num_classes=self.n_classes).permute(3,0,1,2)
         return patch_scan, patch_segm
 
 
@@ -215,9 +215,10 @@ class SAIADDataset(Dataset):
         patch_scan, patch_segm = self.__get_patches_from_patient(patient_idx.item())
         if self.transform:
             out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
-            return self.transform(out)['patch_scan'].float(), self.transform(out)['patch_segm'].float()
+            out = self.transform(out)
+            return out['patch_scan'].half(), out['patch_segm'].half()
         else:
-            return patch_scan.type(torch.float16), patch_segm.type(torch.float16)
+            return patch_scan.half(), patch_segm.half()
 
 
 ### NOTE: below isn't needed anymore, if using the Tensord transform 

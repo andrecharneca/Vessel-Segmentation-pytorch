@@ -8,13 +8,13 @@ from monai.transforms import (
 from .config import AUG_PROB
 
 KEYS = ['patch_scan', 'patch_segm']
-
+device = 'cuda'
 #Cuda version of "train_transform"
 train_transform_cuda = Compose(
     [   
         RandFlipd(keys=KEYS, prob=AUG_PROB, spatial_axis=0),
         RandGaussianNoised(keys=KEYS, prob=AUG_PROB, mean=0.0, std=0.1),
         RandAdjustContrastd(keys=KEYS, prob=AUG_PROB, gamma=(0.5,2)),
-        #ToTensord(keys=KEYS, device='mps')###change to cuda
+        #ToTensord(keys=KEYS, device=device)
     ]
 )
