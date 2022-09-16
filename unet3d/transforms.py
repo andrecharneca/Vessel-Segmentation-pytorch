@@ -14,15 +14,15 @@ device = 'cuda'
 train_transform = Compose(
     [   
         RandFlipd(keys=KEYS, prob=AUG_PROB, spatial_axis=0),
-        RandGaussianNoised(keys=KEYS, prob=AUG_PROB, mean=0.0, std=0.1),
-        RandAdjustContrastd(keys=KEYS, prob=AUG_PROB, gamma=(0.5,2)),
-        NormalizeIntensityd(keys=['patch_scan'], nonzero=True, allow_missing_keys=False) #only normalize non-zero values
+        RandGaussianNoised(keys=KEYS[0], prob=AUG_PROB, mean=0.0, std=0.1),
+        RandAdjustContrastd(keys=KEYS[0], prob=AUG_PROB, gamma=(0.5,2)),
+        NormalizeIntensityd(keys=KEYS[0], nonzero=True, allow_missing_keys=False) #only normalize non-zero values
         
     ]
 )
 val_transform = Compose(
     [   
-        NormalizeIntensityd(keys=KEYS, nonzero=True) #only normalize non-zero values
+        NormalizeIntensityd(keys=KEYS[0], nonzero=True, allow_missing_keys=False)
         
     ]
 )
