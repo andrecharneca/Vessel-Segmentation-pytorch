@@ -198,12 +198,14 @@ class SAIADDataset(Dataset):
 
         patch_scan = torch.tensor(scan[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]])
         patch_segm = torch.tensor(segm[bbox_x[0]:bbox_x[1], bbox_y[0]:bbox_y[1], bbox_z[0]:bbox_z[1]], dtype=torch.int64)
-
-        patch_scan = torch.nn.functional.pad(patch_scan, pad_x + pad_y + pad_z, 'constant', 0)
-        patch_segm = torch.nn.functional.pad(patch_segm, pad_x + pad_y + pad_z, 'constant', 0)
         
+        # Padding: in torch.pad, the padding of each axis is in reverse order
+        patch_scan = torch.nn.functional.pad(patch_scan, pad_z + pad_y + pad_x, 'constant', 0)
+        patch_segm = torch.nn.functional.pad(patch_segm, pad_z + pad_y + pad_x, 'constant', 0)
+
         patch_scan = torch.unsqueeze(patch_scan, 0)
         patch_segm = one_hot(patch_segm, num_classes=self.n_classes).permute(3,0,1,2)
+
         return patch_scan, patch_segm
 
 
@@ -213,12 +215,13 @@ class SAIADDataset(Dataset):
         patient_idx = torch.randint(0, len(self.patients_list), (1,))
     
         patch_scan, patch_segm = self.__get_patches_from_patient(patient_idx.item())
+
         if self.transform:
-            out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_scan} 
+            out = {'name': 'patches', 'patch_scan': patch_scan, 'patch_segm': patch_segm} 
             out = self.transform(out)
-            return out['patch_scan'].half(), out['patch_segm'].half()
+            return out['patch_scan'].float(), out['patch_segm'].float()
         else:
-            return patch_scan.half(), patch_segm.half()
+            return patch_scan.float(), patch_segm.float()
 
 
 ### NOTE: below isn't needed anymore, if using the Tensord transform 
