@@ -104,7 +104,6 @@ for epoch in range(EPOCHS):
     model.train()
     i=1
     batch_num = 1
-    kbar.update(i, values=[("Mem. Usage (MB)", mem_query['total']-mem_query['free'])])
 
     for X_batch, y_batch in train_dataloader:  
         optimizer.zero_grad(set_to_none=True)
@@ -121,7 +120,10 @@ for epoch in range(EPOCHS):
         scaler.update()
 
         train_loss += loss.cpu().detach()
-        kbar.update(i, values=[("loss", train_loss/batch_num)])
+        kbar.update(i, values=[
+            ("loss", train_loss/batch_num), 
+            ("Mem. Usage (MB)", mem_query['total']-mem_query['free'])
+        ])
         i+=1
         batch_num+=1
         
@@ -138,7 +140,7 @@ for epoch in range(EPOCHS):
                 pred = model(X_batch)
                 loss = loss_fn(pred,y_batch)
             valid_loss += loss.cpu().detach()
-            kbar.update(i, values=[("Validation loss", valid_loss/batch_num)])
+            kbar.update(i, values=[("Val loss", valid_loss/batch_num)])
             i+=1
             batch_num+=1
             
@@ -152,7 +154,7 @@ for epoch in range(EPOCHS):
         torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_17sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
 
 
 # Tensorboard #
