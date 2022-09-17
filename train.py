@@ -126,7 +126,7 @@ for epoch in range(EPOCHS):
         batch_num+=1
         
     # Tensorboard #
-    writer.add_scalar("Loss/train", train_loss/TRAIN_BATCH_SIZE, epoch)
+    writer.add_scalar("Loss/train", train_loss/TRAIN_BATCHES_PER_EPOCH, epoch)
 
     ## Validation ##
     valid_loss = 0.0
@@ -143,7 +143,7 @@ for epoch in range(EPOCHS):
             batch_num+=1
             
     # Tensorboard #
-    writer.add_scalar("Loss/val", valid_loss/VAL_BATCH_SIZE, epoch)
+    writer.add_scalar("Loss/val", valid_loss/VAL_BATCHES_PER_EPOCH, epoch)
 
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
