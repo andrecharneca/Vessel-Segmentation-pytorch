@@ -134,7 +134,7 @@ class UpConv3DBlock(nn.Module):
         self.conv1 = nn.Conv3d(in_channels=in_channels+res_channels, out_channels=in_channels//2, kernel_size=(3,3,3), padding='same', bias=False)
         self.relu = nn.ReLU()
         self.bn = nn.BatchNorm3d(num_features=in_channels//2)
-        self.conv2 = nn.Conv3d(in_channels=in_channels//2, out_channels=in_channels//2, kernel_size=(3,3,3), padding='same')
+        self.conv2 = nn.Conv3d(in_channels=in_channels//2, out_channels=in_channels//2, kernel_size=(3,3,3), padding='same', bias=False)
         
         
     def forward(self, input, residual=None):
