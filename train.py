@@ -104,6 +104,7 @@ for epoch in range(EPOCHS):
     model.train()
     i=1
     batch_num = 1
+    kbar.update(i, values=[("Mem. Usage (MB)", mem_query['total']-mem_query['free'])])
 
     for X_batch, y_batch in train_dataloader:  
         optimizer.zero_grad(set_to_none=True)
@@ -120,15 +121,12 @@ for epoch in range(EPOCHS):
         scaler.update()
 
         train_loss += loss.cpu().detach()
-        kbar.update(i, values=[
-            ("loss", train_loss/batch_num), 
-            ("Mem. Usage (MB)", mem_query['total']-mem_query['free'])
-        ])
+        kbar.update(i, values=[("Train loss/batch", train_loss/batch_num)])
         i+=1
         batch_num+=1
         
     # Tensorboard #
-    writer.add_scalar("Loss/train", train_loss/TRAIN_BATCH_SIZE, epoch)
+    writer.add_scalar("Loss/train", train_loss/TRAIN_BATCHES_PER_EPOCH, epoch)
 
     ## Validation ##
     valid_loss = 0.0
@@ -140,12 +138,12 @@ for epoch in range(EPOCHS):
                 pred = model(X_batch)
                 loss = loss_fn(pred,y_batch)
             valid_loss += loss.cpu().detach()
-            kbar.update(i, values=[("Val loss", valid_loss/batch_num)])
+            kbar.update(i, values=[("Val loss/batch", valid_loss/batch_num)])
             i+=1
             batch_num+=1
             
     # Tensorboard #
-    writer.add_scalar("Loss/val", valid_loss/VAL_BATCH_SIZE, epoch)
+    writer.add_scalar("Loss/val", valid_loss/VAL_BATCHES_PER_EPOCH, epoch)
 
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
