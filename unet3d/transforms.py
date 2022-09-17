@@ -3,18 +3,28 @@ from monai.transforms import (
     ToTensord,
     RandFlipd,
     RandGaussianNoised,
-    RandAdjustContrastd
+    RandAdjustContrastd,
+    NormalizeIntensityd
 )
 from .config import AUG_PROB
 
 KEYS = ['patch_scan', 'patch_segm']
+device = 'cuda'
 
-#Cuda version of "train_transform"
-train_transform_cuda = Compose(
+train_transform = Compose(
     [   
         RandFlipd(keys=KEYS, prob=AUG_PROB, spatial_axis=0),
-        RandGaussianNoised(keys=KEYS, prob=AUG_PROB, mean=0.0, std=0.1),
-        RandAdjustContrastd(keys=KEYS, prob=AUG_PROB, gamma=(0.5,2)),
-        #ToTensord(keys=KEYS, device='mps')###change to cuda
+        RandGaussianNoised(keys=KEYS[0], prob=AUG_PROB, mean=0.0, std=0.1),
+        RandAdjustContrastd(keys=KEYS[0], prob=AUG_PROB, gamma=(0.5,2)),
+        NormalizeIntensityd(keys=KEYS[0], nonzero=True, allow_missing_keys=False) #only normalize non-zero values
+        
     ]
 )
+val_transform = Compose(
+    [   
+        NormalizeIntensityd(keys=KEYS[0], nonzero=True, allow_missing_keys=False)
+        
+    ]
+)
+val_transform
+#NOTE: add patch intensity normalization?
