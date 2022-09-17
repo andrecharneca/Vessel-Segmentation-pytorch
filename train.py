@@ -152,7 +152,7 @@ for epoch in range(EPOCHS):
         torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_17sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
 
 
 # Tensorboard #
