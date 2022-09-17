@@ -121,7 +121,7 @@ for epoch in range(EPOCHS):
         scaler.update()
 
         train_loss += loss.cpu().detach()
-        kbar.update(i, values=[("loss", train_loss/batch_num)])
+        kbar.update(i, values=[("Train loss/batch", train_loss/batch_num)])
         i+=1
         batch_num+=1
         
@@ -138,7 +138,7 @@ for epoch in range(EPOCHS):
                 pred = model(X_batch)
                 loss = loss_fn(pred,y_batch)
             valid_loss += loss.cpu().detach()
-            kbar.update(i, values=[("Validation loss", valid_loss/batch_num)])
+            kbar.update(i, values=[("Val loss/batch", valid_loss/batch_num)])
             i+=1
             batch_num+=1
             
