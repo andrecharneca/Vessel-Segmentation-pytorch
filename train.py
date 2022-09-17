@@ -95,15 +95,17 @@ min_valid_loss = math.inf
 for epoch in range(EPOCHS):
     # Check memory usage
     mem_query = nvsmi.DeviceQuery('memory.free, memory.total')['gpu'][0]['fb_memory_usage']
-    print(f"Mem. Usage - Used: {mem_query['total']-mem_query['free']:.1f}/{mem_query['total']} MB")
 
     # progress bar
     kbar = pkbar.Kbar(target=TRAIN_BATCHES_PER_EPOCH+VAL_BATCHES_PER_EPOCH, epoch=epoch, num_epochs=EPOCHS, width=8, always_stateful=True)
-
+    
+    ## Training ##
     train_loss = 0.0
     model.train()
     i=1
     batch_num = 1
+    kbar.update(i, values=[("Mem. Usage (MB)", mem_query['total']-mem_query['free'])])
+
     for X_batch, y_batch in train_dataloader:  
         optimizer.zero_grad(set_to_none=True)
 
@@ -124,8 +126,9 @@ for epoch in range(EPOCHS):
         batch_num+=1
         
     # Tensorboard #
-    writer.add_scalar("Loss/train", train_loss/batch_num, epoch)
+    writer.add_scalar("Loss/train", train_loss/TRAIN_BATCH_SIZE, epoch)
 
+    ## Validation ##
     valid_loss = 0.0
     model.eval()
     batch_num = 1
@@ -140,16 +143,16 @@ for epoch in range(EPOCHS):
             batch_num+=1
             
     # Tensorboard #
-    writer.add_scalar("Loss/val", valid_loss/batch_num, epoch)
+    writer.add_scalar("Loss/val", valid_loss/VAL_BATCH_SIZE, epoch)
 
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_valLoss{min_valid_loss:.6f}.pth')
+        torch.save(model.state_dict(), f'checkpoints/no_aug_epoch{epoch}_17sep.pth')
 
 
 # Tensorboard #
