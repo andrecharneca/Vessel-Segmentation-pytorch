@@ -1,5 +1,3 @@
-#
-
 from json import load
 import math
 import numpy as np
@@ -10,7 +8,7 @@ import pkbar
 from unet3d.config import *
 from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
-from torch.nn.functional import one_hot
+from torch.nn.functional import one_hot, softmax
 from torch.optim import Adam
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import get_headers
@@ -19,6 +17,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
+from unet3d.dice import *
 
 writer = SummaryWriter(log_dir='runs/history')
 torch.manual_seed(0)
@@ -103,6 +102,7 @@ for epoch in range(EPOCHS):
     
     ## Training ##
     train_loss = 0.0
+    dice_vals = np.zeros(5)
     model.train()
     i=1
     batch_num = 1
@@ -114,24 +114,31 @@ for epoch in range(EPOCHS):
         with torch.cuda.amp.autocast():
             pred = model(X_batch)
             loss = loss_fn(pred, y_batch)
-        #loss.backward()
-        #optimizer.step()
-        
+
         # Using gradient scaling bc of float16 precision
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-
+            
+        # Compute dice coefs
+        dice_vals += dice_logits(y_batch.float(), pred.float()).cpu().detach().numpy()
         train_loss += loss.cpu().detach()
-        kbar.update(i, values=[("Train loss/batch", train_loss/batch_num)])
+        kbar.update(i, values=[("Train loss/batch", train_loss/batch_num), 
+                               ("Vein Dice Train", dice_vals[2]/batch_num),
+                               ("Artery Dice Train", dice_vals[3]/batch_num)])
         i+=1
         batch_num+=1
         
     # Tensorboard #
     writer.add_scalar("Loss/train", train_loss/TRAIN_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Tumor Dice/train", dice_vals[1]/TRAIN_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Vein Dice/train", dice_vals[2]/TRAIN_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Artery Dice/train", dice_vals[3]/TRAIN_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Kidney Dice/train", dice_vals[4]/TRAIN_BATCHES_PER_EPOCH, epoch)
 
     ## Validation ##
     valid_loss = 0.0
+    dice_vals = np.zeros(5)
     model.eval()
     batch_num = 1
     with torch.no_grad():
@@ -139,14 +146,22 @@ for epoch in range(EPOCHS):
             with torch.cuda.amp.autocast():
                 pred = model(X_batch)
                 loss = loss_fn(pred,y_batch)
+            
+            dice_vals += dice_logits(y_batch.float(), pred.float()).cpu().detach().numpy()
             valid_loss += loss.cpu().detach()
-            kbar.update(i, values=[("Val loss/batch", valid_loss/batch_num)])
+            kbar.update(i, values=[("Val loss/batch", valid_loss/batch_num),                                                                      ("Vein Dice Val", dice_vals[2]/batch_num),
+                                   ("Artery Dice Val", dice_vals[3]/batch_num)])
             i+=1
             batch_num+=1
             
     # Tensorboard #
     writer.add_scalar("Loss/val", valid_loss/VAL_BATCHES_PER_EPOCH, epoch)
-
+    writer.add_scalar("Tumor Dice/val", dice_vals[1]/VAL_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Vein Dice/val", dice_vals[2]/VAL_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Artery Dice/val", dice_vals[3]/VAL_BATCHES_PER_EPOCH, epoch)
+    writer.add_scalar("Kidney Dice/val", dice_vals[4]/VAL_BATCHES_PER_EPOCH, epoch)
+    
+    # Checkpoints #
     if min_valid_loss > valid_loss:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
