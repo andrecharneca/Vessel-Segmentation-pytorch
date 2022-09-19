@@ -21,8 +21,6 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 
 writer = SummaryWriter(log_dir='runs/history')
-
-
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
 nvsmi = nvidia_smi.getInstance()
