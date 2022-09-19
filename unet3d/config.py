@@ -24,7 +24,7 @@ Training configurations:
     :param CE_WEIGHTS -> the class weights for the Categorical Cross Entropy loss
 """""
 
-EPOCHS = 150
+EPOCHS = 250
 LR = 0.0001
 TRAIN_BATCH_SIZE = 8
 TRAIN_BATCHES_PER_EPOCH = 40

@@ -37,9 +37,9 @@ class Conv3DBlock_2conv(nn.Module):
     
     def forward(self, input):
         #conv1 + relu
-        res = self.relu((self.conv1(input)))
+        res = self.relu(self.conv1(input))
         #conv2 + relu
-        res = self.relu((self.conv2(res)))
+        res = self.relu(self.conv2(res))
         #max pooling
         out = self.pooling(res)
   
@@ -166,7 +166,7 @@ class FinalBlock(nn.Module):
     def __init__(self, in_channels, num_classes, use_softmax=False) -> None:
         super(FinalBlock, self).__init__()
         self.conv = nn.Conv3d(in_channels=in_channels, out_channels=num_classes, kernel_size=(3,3,3), padding='same', bias=True)
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
         self.use_softmax = use_softmax
         
         

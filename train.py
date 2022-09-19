@@ -79,12 +79,16 @@ train_dataloader = WrappedDataLoader(train_dataloader, to_device, device)
 
 ## Model ##
 model = UNet3D_VGG16(
-    in_channels=IN_CHANNELS , 
+    in_channels=IN_CHANNELS, 
     num_classes=NUM_CLASSES,
     use_softmax_end=False #set this to false for training with CELoss
     ).to(device)
 
-loss_fn = CrossEntropyLoss(weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum())).cuda()
+loss_fn = CrossEntropyLoss(
+    weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum()),
+    reduction = 'sum'
+    ).cuda()
+
 optimizer = Adam(params=model.parameters(), lr=LR)
 scaler = torch.cuda.amp.GradScaler()
 
@@ -149,10 +153,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_19sep.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_17sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_19sep.pth')
 
 
 # Tensorboard #

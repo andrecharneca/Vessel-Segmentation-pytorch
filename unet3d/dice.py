@@ -1,4 +1,6 @@
 import torchsummary
+import torch
+from torch.nn.functional import one_hot
 
 def dice_coef_torch(y_true, y_pred):
     """
