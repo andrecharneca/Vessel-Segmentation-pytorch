@@ -86,7 +86,7 @@ model = UNet3D_VGG16(
 
 loss_fn = CrossEntropyLoss(
     weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum()),
-    reduction = 'sum'
+    reduction = 'mean'
     ).cuda()
 
 optimizer = Adam(params=model.parameters(), lr=LR)
