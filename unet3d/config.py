@@ -9,9 +9,10 @@ Dataset configurations:
 
 """""
 DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
+NON_PROCESSED_DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_cleared/'
 IN_CHANNELS = 1
 NUM_CLASSES = 5
-PATCH_SIZE = (96,96,96)
+PATCH_SIZE = (128,128,128)
 NUM_WORKERS = 2
 
 """""
@@ -32,4 +33,4 @@ VAL_BATCHES_PER_EPOCH = 10
 AUG_PROB = 0.3
 VAL_BATCH_SIZE = 8
 TEST_BATCH_SIZE = 8
-CE_WEIGHTS = [0.2,1,10,6,1]
+CE_WEIGHTS = [1,1,1,1,1]###[0.2,1,10,6,1]

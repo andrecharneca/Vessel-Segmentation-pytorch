@@ -166,10 +166,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_19sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/unifweights_epoch{epoch}_20sep.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/test_epoch{epoch}_19sep.pth')
+        torch.save(model.state_dict(), f'checkpoints/unifweights_epoch{epoch}_20sep.pth')
 
 
 # Tensorboard #

@@ -8,6 +8,7 @@ from scipy.ndimage import gaussian_filter
 import cc3d
 from utils.Visualization import ImageSliceViewer3D
 from unet3d.config import *
+from unet3d.transforms import test_transform
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
 
 class Tester():
@@ -18,10 +19,11 @@ class Tester():
     def __init__(self,
         model_path, 
         test_patient,  
-        device = "cuda"
+        device = "cuda",
         n_classes=NUM_CLASSES, 
         patch_size=PATCH_SIZE, 
         step_size=(PATCH_SIZE[0]//2, PATCH_SIZE[1]//2, PATCH_SIZE[2]//2),
+        test_transform = test_transform
         ):
         """
         Modified from the main branch to work with variable patch_size and 1channel input. No preprocess_input applied.
@@ -30,17 +32,15 @@ class Tester():
             test_patient: Name of test patient with folder with scan.nrrd and segm.nrrd files (e.g. 'SAIAD 1')
         """
         self.device = torch.device(device)
-        self.model = load_model(model_path)
+        self.model = self.load_model(model_path)
         self.n_classes = n_classes
         self.step_size = step_size
         self.patch_size = patch_size
-        
+        self.transform = test_transform
         self.test_patient = test_patient
         self.original_spacing = None
         self.current_spacing = [0.5,0.5,1.]
         self.scan = None
-        self.scan_patchified = None
-        self.scan_patchified_shape = None
         self.truth_segm = None
         self.pred_segm_index = None # Classes as 0,1,2...
         self.pred_segm_onehot = None # Classes as one-hot encoding
@@ -51,7 +51,7 @@ class Tester():
         self.original_spacing_folder = '../Data/Predicted Segms OriginSpacing/'
         
         # Folders to read out of
-        self.original_data_folder = '../Data/SAIAD_data_cleared/'
+        self.original_data_folder = NON_PROCESSED_DATASET_PATH
         self.processed_data_folder = DATASET_PATH
 
 
@@ -70,29 +70,31 @@ class Tester():
         Read test patient scan, segm and get the original spacing.
         Also 0-pads until the next multiple of step_size, for each direction.
         """
-        self.scan, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/scan.nrrd')
-        self.truth_segm, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
+        scan, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/scan.nrrd')
+        truth_segm, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
         
         # Compute pad amounts
         pad_amounts = []
         for i in range(3):
-            if self.scan.shape[i]/self.step_size[i] != int(self.scan.shape[i]/self.step_size[i]):
-                next_mult = self.step_size[i]*(int(self.scan.shape[i]/self.step_size[i]) + 1) 
+            if scan.shape[i]/self.step_size[i] != int(scan.shape[i]/self.step_size[i]):
+                next_mult = self.step_size[i]*(int(scan.shape[i]/self.step_size[i]) + 1) 
             else:
-                next_mult = self.scan.shape[i]
-            pad_amounts.append((next_mult-self.scan.shape[i])/2)
+                next_mult = scan.shape[i]
+            pad_amounts.append((next_mult-scan.shape[i])/2)
         
         # Pad each direction (the extra factor is to fix the case where the padding is odd)
         paddings = [(int(pad_amounts[i]), int(pad_amounts[i] + 2*(pad_amounts[i]-int(pad_amounts[i])))) for i in range(3)]
         
-        self.scan = np.pad(self.scan, (paddings[0],(0,0),(0,0)), constant_values = 0)
-        self.scan = np.pad(self.scan, ((0,0), paddings[1],(0,0)), constant_values = 0)
-        self.scan = np.pad(self.scan, ((0,0),(0,0),paddings[2]), constant_values = 0)
-        self.truth_segm = np.pad(self.truth_segm, (paddings[0],(0,0),(0,0)), constant_values = 0)
-        self.truth_segm = np.pad(self.truth_segm, ((0,0), paddings[1],(0,0)), constant_values = 0)
-        self.truth_segm = np.pad(self.truth_segm, ((0,0),(0,0),paddings[2]), constant_values = 0)
+        scan = np.pad(scan, (paddings[0],(0,0),(0,0)), constant_values = 0)
+        scan = np.pad(scan, ((0,0), paddings[1],(0,0)), constant_values = 0)
+        scan = np.pad(scan, ((0,0),(0,0),paddings[2]), constant_values = 0)
+        truth_segm = np.pad(truth_segm, (paddings[0],(0,0),(0,0)), constant_values = 0)
+        truth_segm = np.pad(truth_segm, ((0,0), paddings[1],(0,0)), constant_values = 0)
+        truth_segm = np.pad(truth_segm, ((0,0),(0,0),paddings[2]), constant_values = 0)
 
-
+        self.scan = scan
+        self.truth_segm = truth_segm
+        
         _,header = nrrd.read(self.original_data_folder + self.test_patient +'/segm.nrrd')
         self.original_spacing = np.diagonal(header['space directions'])
 
@@ -122,8 +124,8 @@ class Tester():
         """
         Patchify test scan
         """
-        self.scan_patchified = patchify(self.scan, self.patch_size, step=self.step_size)
-        self.scan_patchified_shape = self.scan_patchified.shape
+        scan_patchified = patchify(self.scan, self.patch_size, step=self.step_size)
+        return scan_patchified
     
     def save_uniform_spacing_segm(self):
         """
@@ -181,23 +183,18 @@ class Tester():
         # Read test data
         self.read_test_patient_data_and_pad()
         
-        # Transforms for multiple inference DON'T CHANGE ORDER OF THIS, it's important to re-flip the segmentation
-        transforms = [get_augmentation(self.patch_size[0])] if not with_transforms else [get_augmentation(self.patch_size[0]),get_augmentation(self.patch_size[0], p_Flip0=1), get_augmentation(self.patch_size[0], p_GaussianNoise=1), get_augmentation(self.patch_size[0], p_RandomGamma=1)]
-        
         predicted_patches_onehot = [] # Saves the patches of each scan
-        preprocess_input = sm.get_preprocessing(self.backbone)
         
         if verbose: print("Patchifying scan...")
-        self.patchify_scan()
+        scan_patchified = self.patchify_scan()
         
         if verbose: print("Predicting on patches...")
         
-        for i in range(self.scan_patchified_shape[0]):
-            for j in range(self.scan_patchified_shape[1]):
-                for k in range(self.scan_patchified_shape[2]):
+        for i in range(scan_patchified_shape[0]):
+            for j in range(scan_patchified_shape[1]):
+                for k in range(scan_patchified_shape[2]):
                     ### Remove enhance contrast
-                    single_patch = self.scan_patchified[i,j,k, :,:,:]
-                    #single_patch_input = preprocess_input(np.expand_dims(single_patch, axis=0))[0] #pre-process according to backbone
+                    single_patch = scan_patchified[i,j,k, :,:,:]
                     
                     # Apply transformations
                     single_patch_transformations = np.array([transform(image=single_patch)["image"] for transform in transforms])
@@ -214,7 +211,7 @@ class Tester():
         predicted_patches_onehot = np.array(predicted_patches_onehot)
 
         # Reshape so we can use unpatchify
-        predicted_patches_onehot = np.reshape(predicted_patches_onehot, self.scan_patchified_shape + (self.n_classes,) )
+        predicted_patches_onehot = np.reshape(predicted_patches_onehot, scan_patchified_shape + (self.n_classes,) )
 
         # Reconstruct from patches
         if verbose: print("Unpatchifying...")
@@ -229,7 +226,7 @@ class Tester():
         if verbose: print("Done.")
         
         # Free memory
-        self.scan_patchified = self.scan_patchified_shape = None
+        scan_patchified = scan_patchified_shape = None
         
     ## Post processing functions ##
     def apply_gaussian_blur(self, sigma = 2, truncate = 2):
