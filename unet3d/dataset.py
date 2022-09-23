@@ -130,6 +130,7 @@ class SAIADDataset(Dataset):
                     ## For class weights ##
                     segm_onehot = one_hot(segm.to(torch.int64), num_classes=self.n_classes)
                     weights = get_class_weights_torch(segm_onehot, n_classes=self.n_classes)
+                    print(weights)
 
                     # Create 3D probability map based on segm, by blurring it and setting each class to certain weight
                     segm_blurred = segm.to(float)

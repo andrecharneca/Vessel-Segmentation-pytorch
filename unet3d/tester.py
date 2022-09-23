@@ -1,5 +1,6 @@
 ## Classes and functions for Testing on patients: Inference and Post-Processing ##
 import numpy as np
+import os
 import glob
 import torch
 import nrrd
@@ -10,7 +11,20 @@ from utils.Visualization import ImageSliceViewer3D
 from unet3d.config import *
 from unet3d.transforms import test_transform
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
+from utils.Other import restore_from_patches_onehot
 
+
+def make_folder(folder):
+    """ Check if folder exists, if not, create folder"""
+    CHECK_FOLDER = os.path.isdir(folder)
+    if not CHECK_FOLDER:
+        os.makedirs(folder)
+        print("Created folder : ", folder)
+
+    else:
+        pass
+
+    
 class Tester():
     """
     Class for testing the models
@@ -47,8 +61,8 @@ class Tester():
         self.paddings = []
         
         # Folders to save segmentations in
-        self.uniform_spacing_folder = '../Data/Predicted Segms UnifSpacing/'
-        self.original_spacing_folder = '../Data/Predicted Segms OriginSpacing/'
+        self.uniform_spacing_folder = make_folder(PREDICTIONS_UNIF_PATH)
+        self.original_spacing_folder = make_folder(PREDICTIONS_ORIGIN_PATH)
         
         # Folders to read out of
         self.original_data_folder = NON_PROCESSED_DATASET_PATH
@@ -101,6 +115,7 @@ class Tester():
         # Save the paddings so we can remove them later
         self.paddings = paddings
     
+    
     def unpad_scan_and_truth_segm(self):
         """ Unpadding function. Use this after inference, so the 'space directions' don't get screwed"""
         self.scan = self.scan[self.paddings[0][0]:(self.scan.shape[0]-self.paddings[0][1]),
@@ -119,13 +134,15 @@ class Tester():
             self.pred_segm_onehot = self.pred_segm_onehot[self.paddings[0][0]:(self.pred_segm_onehot.shape[0]-self.paddings[0][1]),
                         self.paddings[1][0]:(self.pred_segm_onehot.shape[1]-self.paddings[1][1]),
                         self.paddings[2][0]:(self.pred_segm_onehot.shape[2]-self.paddings[2][1])]
-                           
+         
+        
     def patchify_scan(self):
         """
         Patchify test scan
         """
         scan_patchified = patchify(self.scan, self.patch_size, step=self.step_size)
         return scan_patchified
+    
     
     def save_uniform_spacing_segm(self):
         """
@@ -172,6 +189,7 @@ class Tester():
         
         self.current_spacing = self.original_spacing
         
+        
     def predict(self, with_transforms = False, verbose=0):
         """
         Predict on the test scan
@@ -190,35 +208,61 @@ class Tester():
         
         if verbose: print("Predicting on patches...")
         
-        for i in range(scan_patchified_shape[0]):
-            for j in range(scan_patchified_shape[1]):
-                for k in range(scan_patchified_shape[2]):
-                    ### Remove enhance contrast
-                    single_patch = scan_patchified[i,j,k, :,:,:]
+        self.model.eval()
+        for i in range(scan_patchified.shape[0]):
+            for j in range(scan_patchified.shape[1]):
+                for k in range(scan_patchified.shape[2]):
                     
+                    patch = np.array([scan_patchified[i,j,k, :,:,:]])                    
+                    patch_transform = {'patch_scan': patch, 
+                                       'patch_scan_flipped': patch,
+                                       'patch_scan_noise': patch, 
+                                       'patch_scan_contrast': patch
+                                        } 
                     # Apply transformations
-                    single_patch_transformations = np.array([transform(image=single_patch)["image"] for transform in transforms])
-                    single_patch_predictions = self.model.predict(single_patch_transformations) # For rgb
-
+                    patch_transform = self.transform(patch_transform)
+                    patch_transform = np.array([patch_transform['patch_scan'].numpy(),
+                                                    patch_transform['patch_scan_flipped'].numpy(),
+                                                    patch_transform['patch_scan_noise'].numpy(),
+                                                    patch_transform['patch_scan_contrast'].numpy()])
+                    patch_transform = torch.Tensor(patch_transform).to(self.device)
+                    
+                    with torch.no_grad():
+                        single_patch_predictions = self.model(patch_transform)
+                        
                     # Re-flip the prediction on the flipped patch
                     if with_transforms:
-                        single_patch_predictions[1] = transforms[1](mask=single_patch_predictions[1])["mask"]
+                        single_patch_predictions[1] = self.transform(single_patch_predictions)['patch_scan_flipped']
 
                     # Average the probabilities and append
-                    predicted_patches_onehot.append(np.mean(single_patch_predictions, axis=0))
+                    predicted_patches_onehot.append(torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
+                    del patch_transform
+                    del single_patch_predictions
 
         #Convert list to numpy array
         predicted_patches_onehot = np.array(predicted_patches_onehot)
+        print(predicted_patches_onehot.shape)
 
         # Reshape so we can use unpatchify
-        predicted_patches_onehot = np.reshape(predicted_patches_onehot, scan_patchified_shape + (self.n_classes,) )
+        predicted_patches_onehot = np.reshape(predicted_patches_onehot, 
+                                              (scan_patchified.shape[0],scan_patchified.shape[1],scan_patchified.shape[2],)+
+                                              (self.n_classes,)+
+                                              self.patch_size)
+        print(predicted_patches_onehot.shape)
+        
+        # Put one hot axis at the end
+        predicted_patches_onehot = np.swapaxes(predicted_patches_onehot, 3, 6)
+        print(predicted_patches_onehot.shape)
 
         # Reconstruct from patches
         if verbose: print("Unpatchifying...")
-        self.pred_segm_onehot = restore_from_patches_onehot(self.scan.shape, predicted_patches_onehot, xstep=self.step_size[0],
-                                                            ystep=self.step_size[1], zstep=self.step_size[2])
-
+        self.pred_segm_onehot = restore_from_patches_onehot(self.scan.shape, predicted_patches_onehot,
+                                                            xstep=self.step_size[0],
+                                                            ystep=self.step_size[1], 
+                                                            zstep=self.step_size[2])
+        print(self.pred_segm_onehot.shape)
         self.pred_segm_index = np.argmax(self.pred_segm_onehot, axis=3)
+        print(self.pred_segm_index.shape)
         
         # Unpad to original size
         self.unpad_scan_and_truth_segm()
@@ -227,6 +271,7 @@ class Tester():
         
         # Free memory
         scan_patchified = scan_patchified_shape = None
+        
         
     ## Post processing functions ##
     def apply_gaussian_blur(self, sigma = 2, truncate = 2):
@@ -240,6 +285,7 @@ class Tester():
                                                                     ,sigma=sigma, truncate=truncate)
 
         self.pred_segm_index = np.argmax(self.pred_segm_onehot, axis=3)
+        
         
     def clean_connected_components(self):
         """
@@ -278,18 +324,22 @@ class Tester():
         # Final segmentation
         self.pred_segm_index = tumors_filtered + kidneys_filtered + vessels_filtered
 
+        
     ## Functions to display 3D data ##
     def show_scan_vs_pred(self):
         # Select 1 rgb channel for the scan
         ImageSliceViewer3D(self.scan, self.pred_segm_index, title_left="Scan", title_right="Prediction")
     
+    
     def show_scan_vs_truth(self):
         # Select 1 rgb channel for the scan
         ImageSliceViewer3D(self.scan, self.truth_segm, title_left="Scan", title_right="Ground Truth")
     
+    
     def show_truth_vs_pred(self):
         # Select 1 rgb channel for the scan
         ImageSliceViewer3D(self.truth_segm, self.pred_segm_index, title_left="Ground Truth", title_right="Prediction")
+        
         
     ## Other functions ##
     def compute_dice(self):

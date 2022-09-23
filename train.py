@@ -19,7 +19,7 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
-date='21sep'
+date='23sep'
 writer = SummaryWriter(log_dir='runs/history'+date)
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
@@ -166,10 +166,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/unifweights_epoch{epoch}_{date}.pth')
+        torch.save(model.state_dict(), f'checkpoints/saiad1and13_epoch{epoch}_{date}.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/unifweights_epoch{epoch}_{date}.pth')
+        torch.save(model.state_dict(), f'checkpoints/saiad1and13_epoch{epoch}_{date}.pth')
 
 
 # Tensorboard #

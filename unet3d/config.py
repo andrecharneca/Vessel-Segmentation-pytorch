@@ -1,4 +1,17 @@
 
+
+"""""
+Folders:
+    :param DATASET_PATH -> the directory path to the processed SAIAD patients (each with respective subfolder)
+    :param NON_PROCESSED_DATASET_PATH ->
+    :param PREDICTIONS_UNIF_PATH ->
+    :param PREDICTIONS_ORIGIN_PATH ->
+"""""
+DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
+NON_PROCESSED_DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_cleared/'
+PREDICTIONS_UNIF_PATH = 'Data/Predicted_Segms_UnifSpacing/'
+PREDICTIONS_ORIGIN_PATH = 'Data/Predicted_Segms_OriginSpacing/'
+
 """""
 Dataset configurations:
     :param DATASET_PATH -> the directory path to the processed SAIAD patients (each with respective subfolder)
@@ -6,10 +19,7 @@ Dataset configurations:
     :param NUM_CLASSES -> specifies the number of output channels for classes (including background as class)
     :param PATCH_SIZE -> volume of patch (x,y,z)
     :param NUM_WORKERS -> num_workers param for torch DataLoader (best one for Mesocentre seems to be 2)
-
 """""
-DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
-NON_PROCESSED_DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_cleared/'
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
