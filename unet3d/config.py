@@ -23,7 +23,7 @@ Dataset configurations:
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
-NUM_WORKERS = 4
+NUM_WORKERS = 2
 
 """""
 Training configurations:
