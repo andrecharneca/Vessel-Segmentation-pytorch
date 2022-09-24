@@ -198,14 +198,20 @@ class Tester():
         Notes:
             - This generates a predicted segmentation with the same voxel spacings as test_scan.
         """
+        temp = {}
         # Read test data
         self.read_test_patient_data_and_pad()
         
-        predicted_patches_onehot = [] # Saves the patches of each scan
         
         if verbose: print("Patchifying scan...")
         scan_patchified = self.patchify_scan()
         
+        # Saves the patches of each scan
+        predicted_patches_onehot = np.zeros((scan_patchified.shape[0],scan_patchified.shape[1],scan_patchified.shape[2],) +
+                                            (self.n_classes,)+
+                                            self.patch_size)
+        print(predicted_patches_onehot.shape)
+                                            
         if verbose: print("Predicting on patches...")
         
         self.model.eval()
@@ -213,49 +219,49 @@ class Tester():
             for j in range(scan_patchified.shape[1]):
                 for k in range(scan_patchified.shape[2]):
                     
-                    patch = np.array([scan_patchified[i,j,k, :,:,:]])                    
-                    patch_transform = {'patch_scan': patch, 
-                                       'patch_scan_flipped': patch,
-                                       'patch_scan_noise': patch, 
-                                       'patch_scan_contrast': patch
-                                        } 
-                    # Apply transformations
-                    patch_transform = self.transform(patch_transform)
-                    patch_transform = np.array([patch_transform['patch_scan'].numpy(),
-                                                    patch_transform['patch_scan_flipped'].numpy(),
-                                                    patch_transform['patch_scan_noise'].numpy(),
-                                                    patch_transform['patch_scan_contrast'].numpy()])
-                    patch_transform = torch.Tensor(patch_transform).to(self.device)
+                    patch = np.array([scan_patchified[i,j,k, :,:,:]])
+                    
+                    if with_transforms:
+                        # Apply transformations
+                        patch_transform = {'patch_scan': patch, 
+                                           'patch_scan_flipped': patch,
+                                           'patch_scan_noise': patch, 
+                                           'patch_scan_contrast': patch
+                                            } 
+                        patch_transform = self.transform(patch_transform)
+                        patch_transform = np.array([patch_transform['patch_scan'].numpy(),
+                                                        patch_transform['patch_scan_flipped'].numpy(),
+                                                        patch_transform['patch_scan_noise'].numpy(),
+                                                        patch_transform['patch_scan_contrast'].numpy()])
+                        patch_input = torch.Tensor(patch_transform).to(self.device)
+                    else:
+                        patch_input = torch.Tensor(patch).to(self.device)
+                        
+                    if (i,j,k)==(5,5,1): temp['patch_input'] = patch_input###
                     
                     with torch.no_grad():
-                        single_patch_predictions = self.model(patch_transform)
+                        single_patch_predictions = self.model(patch_input)
                         
                     # Re-flip the prediction on the flipped patch
                     if with_transforms:
-                        single_patch_predictions[1] = self.transform(single_patch_predictions)['patch_scan_flipped']
+                        tmp_patch = {'patch_scan_flipped': single_patch_predictions[1]}
+                        single_patch_predictions[1] = self.transform(tmp_patch)['patch_scan_flipped']
+                        
+                    if (i,j,k)==(5,5,1): temp['single_patch_predictions'] = single_patch_predictions###
 
                     # Average the probabilities and append
-                    predicted_patches_onehot.append(torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
+                    predicted_patches_onehot[i,j,k] = (torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
                     del patch_transform
                     del single_patch_predictions
 
-        #Convert list to numpy array
-        predicted_patches_onehot = np.array(predicted_patches_onehot)
-        print(predicted_patches_onehot.shape)
-
-        # Reshape so we can use unpatchify
-        predicted_patches_onehot = np.reshape(predicted_patches_onehot, 
-                                              (scan_patchified.shape[0],scan_patchified.shape[1],scan_patchified.shape[2],)+
-                                              (self.n_classes,)+
-                                              self.patch_size)
-        print(predicted_patches_onehot.shape)
-        
         # Put one hot axis at the end
-        predicted_patches_onehot = np.swapaxes(predicted_patches_onehot, 3, 6)
+        predicted_patches_onehot = np.transpose(predicted_patches_onehot, (0,1,2,4,5,6,3))
         print(predicted_patches_onehot.shape)
 
         # Reconstruct from patches
         if verbose: print("Unpatchifying...")
+        temp['predicted_patches_onehot'] = predicted_patches_onehot###
+        
         self.pred_segm_onehot = restore_from_patches_onehot(self.scan.shape, predicted_patches_onehot,
                                                             xstep=self.step_size[0],
                                                             ystep=self.step_size[1], 
@@ -268,7 +274,7 @@ class Tester():
         self.unpad_scan_and_truth_segm()
 
         if verbose: print("Done.")
-        
+        return temp###
         # Free memory
         scan_patchified = scan_patchified_shape = None
         

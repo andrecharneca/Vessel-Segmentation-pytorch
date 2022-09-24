@@ -19,8 +19,9 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
-date='23sep'
-writer = SummaryWriter(log_dir='runs/history'+date)
+date='24sep'
+model_name = f'saiad1and18tervasc_{date}'
+writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
 nvsmi = nvidia_smi.getInstance()
@@ -30,9 +31,9 @@ nvsmi = nvidia_smi.getInstance()
 torch.backends.cudnn.benchmark = True # Speeds up stuff
 torch.backends.cudnn.enabled = True
 device = torch.device('cuda')
-pin_memory = False
+pin_memory = True###
 
-excl_patients_training = ['SAIAD 1', 'SAIAD 13'] #patients for validation/testing
+excl_patients_training = ['SAIAD 1', 'SAIAD 18 TER VASCULAIRE'] #patients for validation/testing
 excl_patients_val = list(set(patient_names) - set(excl_patients_training))
 
 print("Training with val patients:", excl_patients_training)
@@ -109,6 +110,12 @@ for epoch in range(EPOCHS):
     kbar.update(i, values=[("Mem. Usage (MB)", mem_query['total']-mem_query['free'])])
 
     for X_batch, y_batch in train_dataloader:  
+        if torch.isnan(X_batch).any():
+            print("X_batch has nan value")
+        if torch.isnan(y_batch).any():
+            print("y_batch has nan value")
+
+
         optimizer.zero_grad(set_to_none=True)
 
         with torch.cuda.amp.autocast():
@@ -166,10 +173,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/saiad1and13_epoch{epoch}_{date}.pth')
+        torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(), f'checkpoints/saiad1and13_epoch{epoch}_{date}.pth')
+        torch.save(model.state_dict(),f'checkpoints/{model_name}_epoch{epoch}pth')
 
 
 # Tensorboard #

@@ -23,7 +23,7 @@ Dataset configurations:
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
-NUM_WORKERS = 2
+NUM_WORKERS = 4
 
 """""
 Training configurations:
@@ -36,10 +36,10 @@ Training configurations:
 """""
 
 EPOCHS = 250
-LR = 0.0001
+LR = 5e-5#0.0001
 TRAIN_BATCH_SIZE = 8
 TRAIN_BATCHES_PER_EPOCH = 40
-VAL_BATCHES_PER_EPOCH = 10
+VAL_BATCHES_PER_EPOCH = 20#10
 AUG_PROB = 0.3
 VAL_BATCH_SIZE = 8
 TEST_BATCH_SIZE = 8
