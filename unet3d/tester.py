@@ -4,6 +4,7 @@ import os
 import glob
 import torch
 import nrrd
+from tqdm import tqdm
 from patchify import patchify,unpatchify
 from scipy.ndimage import gaussian_filter
 import cc3d
@@ -12,6 +13,8 @@ from unet3d.config import *
 from unet3d.transforms import test_transform
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import restore_from_patches_onehot
+from utils.Processing import resample_volume
+import SimpleITK as sitk
 
 
 def make_folder(folder):
@@ -20,10 +23,8 @@ def make_folder(folder):
     if not CHECK_FOLDER:
         os.makedirs(folder)
         print("Created folder : ", folder)
-
     else:
         pass
-
     
 class Tester():
     """
@@ -61,8 +62,10 @@ class Tester():
         self.paddings = []
         
         # Folders to save segmentations in
-        self.uniform_spacing_folder = make_folder(PREDICTIONS_UNIF_PATH)
-        self.original_spacing_folder = make_folder(PREDICTIONS_ORIGIN_PATH)
+        make_folder(PREDICTIONS_UNIF_PATH+test_patient)
+        self.uniform_spacing_folder = PREDICTIONS_UNIF_PATH
+        make_folder(PREDICTIONS_ORIGIN_PATH+test_patient)
+        self.original_spacing_folder = PREDICTIONS_ORIGIN_PATH
         
         # Folders to read out of
         self.original_data_folder = NON_PROCESSED_DATASET_PATH
@@ -210,12 +213,11 @@ class Tester():
         predicted_patches_onehot = np.zeros((scan_patchified.shape[0],scan_patchified.shape[1],scan_patchified.shape[2],) +
                                             (self.n_classes,)+
                                             self.patch_size)
-        print(predicted_patches_onehot.shape)
                                             
         if verbose: print("Predicting on patches...")
         
         self.model.eval()
-        for i in range(scan_patchified.shape[0]):
+        for i in tqdm(range(scan_patchified.shape[0])):
             for j in range(scan_patchified.shape[1]):
                 for k in range(scan_patchified.shape[2]):
                     
@@ -229,17 +231,15 @@ class Tester():
                                            'patch_scan_contrast': patch
                                             } 
                         patch_transform = self.transform(patch_transform)
-                        patch_transform = np.array([patch_transform['patch_scan'].numpy(),
-                                                        patch_transform['patch_scan_flipped'].numpy(),
-                                                        patch_transform['patch_scan_noise'].numpy(),
-                                                        patch_transform['patch_scan_contrast'].numpy()])
+                        patch_transform = np.stack([patch_transform[key] for key in patch_transform], axis=0)
+                        
                         patch_input = torch.Tensor(patch_transform).to(self.device)
                     else:
                         patch_input = torch.Tensor(patch).to(self.device)
                         
-                    if (i,j,k)==(5,5,1): temp['patch_input'] = patch_input###
+                    if (i,j,k)==(0,0,1): temp['patch_input'] = patch_input###
                     
-                    with torch.no_grad():
+                    with torch.no_grad() and torch.cuda.amp.autocast():
                         single_patch_predictions = self.model(patch_input)
                         
                     # Re-flip the prediction on the flipped patch
@@ -247,7 +247,7 @@ class Tester():
                         tmp_patch = {'patch_scan_flipped': single_patch_predictions[1]}
                         single_patch_predictions[1] = self.transform(tmp_patch)['patch_scan_flipped']
                         
-                    if (i,j,k)==(5,5,1): temp['single_patch_predictions'] = single_patch_predictions###
+                    if (i,j,k)==(0,0,1): temp['single_patch_predictions'] = single_patch_predictions###
 
                     # Average the probabilities and append
                     predicted_patches_onehot[i,j,k] = (torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
@@ -256,7 +256,6 @@ class Tester():
 
         # Put one hot axis at the end
         predicted_patches_onehot = np.transpose(predicted_patches_onehot, (0,1,2,4,5,6,3))
-        print(predicted_patches_onehot.shape)
 
         # Reconstruct from patches
         if verbose: print("Unpatchifying...")
@@ -266,18 +265,17 @@ class Tester():
                                                             xstep=self.step_size[0],
                                                             ystep=self.step_size[1], 
                                                             zstep=self.step_size[2])
-        print(self.pred_segm_onehot.shape)
+        
         self.pred_segm_index = np.argmax(self.pred_segm_onehot, axis=3)
-        print(self.pred_segm_index.shape)
         
         # Unpad to original size
         self.unpad_scan_and_truth_segm()
 
         if verbose: print("Done.")
-        return temp###
         # Free memory
         scan_patchified = scan_patchified_shape = None
-        
+        return temp###
+
         
     ## Post processing functions ##
     def apply_gaussian_blur(self, sigma = 2, truncate = 2):

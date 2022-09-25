@@ -19,7 +19,7 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
-date='24sep'
+date='25sep'
 model_name = f'saiad1and18tervasc_{date}'
 writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
@@ -33,7 +33,7 @@ torch.backends.cudnn.enabled = True
 device = torch.device('cuda')
 pin_memory = True###
 
-excl_patients_training = ['SAIAD 1', 'SAIAD 18 TER VASCULAIRE'] #patients for validation/testing
+excl_patients_training = ['SAIAD 1', 'SAIAD 18 TER vasculaire'] #patients for validation/testing
 excl_patients_val = list(set(patient_names) - set(excl_patients_training))
 
 print("Training with val patients:", excl_patients_training)
@@ -130,9 +130,9 @@ for epoch in range(EPOCHS):
         # Compute dice coefs
         dice_vals += dice_logits(y_batch.float(), pred.float()).cpu().detach().numpy()
         train_loss += loss.cpu().detach()
-        kbar.update(i, values=[("Train loss/batch", train_loss/batch_num), 
-                               ("Vein Dice Train", dice_vals[2]/batch_num),
-                               ("Artery Dice Train", dice_vals[3]/batch_num)])
+        kbar.update(i, values=[("Loss/train", train_loss/batch_num), 
+                               ("Vein Dice/train", dice_vals[2]/batch_num),
+                               ("Artery Dice/train", dice_vals[3]/batch_num)])
         i+=1
         batch_num+=1
         
@@ -156,8 +156,8 @@ for epoch in range(EPOCHS):
             
             dice_vals += dice_logits(y_batch.float(), pred.float()).cpu().detach().numpy()
             valid_loss += loss.cpu().detach()
-            kbar.update(i, values=[("Val loss/batch", valid_loss/batch_num),                                                                      ("Vein Dice Val", dice_vals[2]/batch_num),
-                                   ("Artery Dice Val", dice_vals[3]/batch_num)])
+            kbar.update(i, values=[("Loss/val", valid_loss/batch_num),                                                                      ("Vein Dice/val", dice_vals[2]/batch_num),
+                                   ("Artery Dice/val", dice_vals[3]/batch_num)])
             i+=1
             batch_num+=1
             
@@ -173,10 +173,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}pth')
+        torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(),f'checkpoints/{model_name}_epoch{epoch}pth')
+        torch.save(model.state_dict(),f'checkpoints/{model_name}_epoch{epoch}.pth')
 
 
 # Tensorboard #

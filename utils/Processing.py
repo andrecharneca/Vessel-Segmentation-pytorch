@@ -1,12 +1,10 @@
 # Includes pre-processing functions #
 
 import numpy as np
-from volumentations import *
+#from volumentations import *
 from patchify import patchify, unpatchify
-from tensorflow.keras.utils import to_categorical
-import cv2
+#from tensorflow.keras.utils import to_categorical
 import sys
-sys.path.insert(1, '../kits19/')
 import nibabel as nib
 #from starter_code.utils import load_case
 import nrrd

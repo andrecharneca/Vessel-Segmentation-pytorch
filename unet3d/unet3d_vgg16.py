@@ -102,7 +102,7 @@ class Conv3DBlock_center(nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
         super(Conv3DBlock_center, self).__init__()
         self.conv = nn.Conv3d(in_channels= in_channels, out_channels=out_channels, kernel_size=(3,3,3), padding='same', bias=False)
-        self.bn = nn.BatchNorm3d(num_features=out_channels)
+        self.bn = nn.BatchNorm3d(num_features=out_channels, eps=0.001, momentum=0.99) #copying Keras default args
         self.relu = nn.ReLU()
 
         
@@ -133,7 +133,7 @@ class UpConv3DBlock(nn.Module):
         self.upconv = nn.Upsample(scale_factor=2)
         self.conv1 = nn.Conv3d(in_channels=in_channels+res_channels, out_channels=in_channels//2, kernel_size=(3,3,3), padding='same', bias=False)
         self.relu = nn.ReLU()
-        self.bn = nn.BatchNorm3d(num_features=in_channels//2)
+        self.bn = nn.BatchNorm3d(num_features=in_channels//2, eps=0.001, momentum=0.99)
         self.conv2 = nn.Conv3d(in_channels=in_channels//2, out_channels=in_channels//2, kernel_size=(3,3,3), padding='same', bias=False)
         
         
