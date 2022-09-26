@@ -228,7 +228,7 @@ class SAIADDataset(Dataset):
 
 
 class WrappedDataLoader:
-    """ Wrapper to output batches to GPU as they come"""
+    """Wrapper to output batches to GPU as they come"""
     def __init__(self, dl, func, args):
         self.dl = dl
         self.func = func

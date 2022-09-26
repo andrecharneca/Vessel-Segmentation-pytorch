@@ -18,12 +18,12 @@ Dataset configurations:
     :param IN_CHANNELS -> number of input channels
     :param NUM_CLASSES -> specifies the number of output channels for classes (including background as class)
     :param PATCH_SIZE -> volume of patch (x,y,z)
-    :param NUM_WORKERS -> num_workers param for torch DataLoader NOTE: keep this at 0 OR 1, otherwise it will repeat patches (bug)
+    :param NUM_WORKERS -> num_workers param for torch DataLoader NOTE: keep this at 0, otherwise it will repeat patches (bug)
 """""
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
-NUM_WORKERS = 1
+NUM_WORKERS = 0
 
 """""
 Training configurations:
@@ -37,10 +37,10 @@ Training configurations:
 
 EPOCHS = 250
 LR = 5e-5#0.0001
-TRAIN_BATCH_SIZE = 8
-TRAIN_BATCHES_PER_EPOCH = 70
-VAL_BATCHES_PER_EPOCH = 30#10
+TRAIN_BATCHES_PER_EPOCH = 40
+VAL_BATCHES_PER_EPOCH = 12#10
 AUG_PROB = 0.3
+TRAIN_BATCH_SIZE = 8
 VAL_BATCH_SIZE = 8
 TEST_BATCH_SIZE = 8
 CE_WEIGHTS = [0.2,1,10,6,1]
