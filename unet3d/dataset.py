@@ -31,7 +31,7 @@ def get_class_weights_torch(y_train, n_classes):
     for i in range(n_classes):
         # Inverse of Number of voxels belonging to class
         class_weights.append(1/torch.count_nonzero(y_train[:,:,:,i]).item())
-    return class_weights
+    return class_weights/torch.sum(class_weights)
 
 def sample(probabilities, n=1):
     """ Sample from probabability distribution of any dimension, n times"""
@@ -130,7 +130,7 @@ class SAIADDataset(Dataset):
                     ## For class weights ##
                     segm_onehot = one_hot(segm.to(torch.int64), num_classes=self.n_classes)
                     weights = get_class_weights_torch(segm_onehot, n_classes=self.n_classes)
-                    print(weights)
+                    print(f"Patient {patient} weights: {weights}")
 
                     # Create 3D probability map based on segm, by blurring it and setting each class to certain weight
                     segm_blurred = segm.to(float)
@@ -161,6 +161,7 @@ class SAIADDataset(Dataset):
                 patients_centers.append(samp)
         return patients_centers
 
+
     def __get_patches_from_patient(self, i_patient):
         """ Get patch (scan and segm) from patient 
         Args:
@@ -181,6 +182,7 @@ class SAIADDataset(Dataset):
             # Non uniform sampling
             cx, cy, cz = self.patients_centers[i_patient][self.patients_centers_counter[i_patient]]
             self.patients_centers_counter[i_patient]+=1
+            ###print(self.patients_list[i_patient],self.patients_centers_counter[i_patient], [cx, cy, cz])
         else:
             #Uniform sampling
             cx = np.random.randint(0,scan.shape[0])
@@ -225,7 +227,6 @@ class SAIADDataset(Dataset):
             return patch_scan.float(), patch_segm.float()
 
 
-### NOTE: below isn't needed anymore, if using the Tensord transform 
 class WrappedDataLoader:
     """ Wrapper to output batches to GPU as they come"""
     def __init__(self, dl, func, args):

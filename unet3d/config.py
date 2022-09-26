@@ -18,12 +18,12 @@ Dataset configurations:
     :param IN_CHANNELS -> number of input channels
     :param NUM_CLASSES -> specifies the number of output channels for classes (including background as class)
     :param PATCH_SIZE -> volume of patch (x,y,z)
-    :param NUM_WORKERS -> num_workers param for torch DataLoader (best one for Mesocentre seems to be 2)
+    :param NUM_WORKERS -> num_workers param for torch DataLoader NOTE: keep this at 0 OR 1, otherwise it will repeat patches (bug)
 """""
 IN_CHANNELS = 1
 NUM_CLASSES = 5
 PATCH_SIZE = (96,96,96)
-NUM_WORKERS = 2
+NUM_WORKERS = 1
 
 """""
 Training configurations:
