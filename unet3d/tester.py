@@ -174,32 +174,38 @@ class Tester():
         """
         # Resample volumes with new voxel spacings
         scan_path = self.processed_data_folder + self.test_patient + '/scan.nrrd'
-        truth_segm_path = self.uniform_spacing_folder + self.test_patient + '_truth_segm.nrrd'
         segm_path = self.uniform_spacing_folder + self.test_patient + '_pred_segm.nrrd'
+        if self.mode == 'test':
+            truth_segm_path = self.uniform_spacing_folder + self.test_patient + '_truth_segm.nrrd'
         
         resampled_scan = resample_volume(scan_path, new_spacing = self.original_spacing)
         resampled_segm = resample_volume(segm_path, new_spacing = self.original_spacing, 
                                          interpolator = sitk.sitkNearestNeighbor)
-        resampled_truth_segm = resample_volume(truth_segm_path, new_spacing = self.original_spacing, 
+        if self.mode == 'test':
+            resampled_truth_segm = resample_volume(truth_segm_path, new_spacing = self.original_spacing, 
                                          interpolator = sitk.sitkNearestNeighbor)
         
         # Convert axes to (width, height, slices) where slice = 0 is at the bottom of patient
         self.scan = np.swapaxes(sitk.GetArrayFromImage(resampled_scan), 0, 2)#[:,:,::-1]
         self.pred_segm_index = np.swapaxes(sitk.GetArrayFromImage(resampled_segm), 0, 2)#[:,:,::-1]
-        self.truth_segm = np.swapaxes(sitk.GetArrayFromImage(resampled_truth_segm), 0, 2)#[:,:,::-1]
+        if self.mode == 'test':
+            self.truth_segm = np.swapaxes(sitk.GetArrayFromImage(resampled_truth_segm), 0, 2)#[:,:,::-1]
 
         
         # Save to OriginSpacing folder
-        _, origin_header_segm = nrrd.read(self.original_data_folder + self.test_patient + '/segm.nrrd')
         _, origin_header_scan = nrrd.read(self.original_data_folder + self.test_patient + '/scan.nrrd')
+        if self.mode == 'test':
+            _, origin_header_segm = nrrd.read(self.original_data_folder + self.test_patient + '/segm.nrrd')
         
         for i in range(3):
             origin_header_scan['space directions'][i][i] = self.original_spacing[i]
-            origin_header_segm['space directions'][i][i] = self.original_spacing[i]
+            if self.mode == 'test':
+                origin_header_segm['space directions'][i][i] = self.original_spacing[i]
         
         nrrd.write(self.original_spacing_folder + self.test_patient + '/pred_segm.nrrd', self.pred_segm_index, origin_header_segm)
-        nrrd.write(self.original_spacing_folder + self.test_patient + '/truth_segm.nrrd', self.truth_segm, origin_header_segm)
         nrrd.write(self.original_spacing_folder + self.test_patient + '/scan.nrrd', self.scan, origin_header_scan)
+        if self.mode == 'test':
+            nrrd.write(self.original_spacing_folder + self.test_patient + '/truth_segm.nrrd', self.truth_segm, origin_header_segm)
         
         self.current_spacing = self.original_spacing
         
@@ -284,7 +290,7 @@ class Tester():
 
         if verbose: print("Prediction done.")
         # Free memory
-        scan_patchified = scan_patchified_shape = None
+        scan_patchified = None
         return temp###
 
         
@@ -341,20 +347,25 @@ class Tester():
 
         
     ## Functions to display 3D data ##
+    def show_scan(self):
+        ImageSliceViewer3D(self.scan, title_left="Scan")
+
     def show_scan_vs_pred(self):
-        # Select 1 rgb channel for the scan
         ImageSliceViewer3D(self.scan, self.pred_segm_index, title_left="Scan", title_right="Prediction")
     
     
     def show_scan_vs_truth(self):
-        # Select 1 rgb channel for the scan
-        ImageSliceViewer3D(self.scan, self.truth_segm, title_left="Scan", title_right="Ground Truth")
+        if self.mode = 'test':
+            ImageSliceViewer3D(self.scan, self.truth_segm, title_left="Scan", title_right="Ground Truth")
+        else:
+            print("No truth available.")
     
     
     def show_truth_vs_pred(self):
-        # Select 1 rgb channel for the scan
-        ImageSliceViewer3D(self.truth_segm, self.pred_segm_index, title_left="Ground Truth", title_right="Prediction")
-        
+        if self.mode == 'test':
+            ImageSliceViewer3D(self.truth_segm, self.pred_segm_index, title_left="Ground Truth", title_right="Prediction")
+        else:
+            print("No truth available.")
         
     ## Other functions ##
     def compute_dice(self):
@@ -362,4 +373,7 @@ class Tester():
         Computes dice between pred_segm_index and truth_index.
         Outputs the dice values in class order (background is class 0)
         """
-        return dice_coef_torch_multiclass(self.truth_segm, self.pred_segm_index, self.n_classes, one_hot_encoded=False)
+        if self.mode == 'test':
+            return dice_coef_torch_multiclass(self.truth_segm, self.pred_segm_index, self.n_classes, one_hot_encoded=False)
+        else:
+            print("No truth available.")
