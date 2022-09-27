@@ -19,8 +19,8 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
-date='26sep'
-model_name = f'pre_saiad1and18tervasc_{date}'
+date='27sep'
+model_name = f'saiad1and18tervasc_{date}'
 writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
