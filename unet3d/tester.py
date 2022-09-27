@@ -162,7 +162,7 @@ class Tester():
         Saves the truth and prediction segm with the uniform spacing 
         We need to do this also for truth because we've padded it, otherwise we won't be able to compute dice
         """
-        _, unif_header = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
+        _, unif_header = nrrd.read(self.processed_data_folder + self.test_patient + '/scan.nrrd')
         nrrd.write(self.uniform_spacing_folder + self.test_patient + '_pred_segm.nrrd', self.pred_segm_index, unif_header)
         if self.mode == 'test':
             nrrd.write(self.uniform_spacing_folder + self.test_patient + '_truth_segm.nrrd', self.truth_segm, unif_header)
@@ -196,6 +196,8 @@ class Tester():
         _, origin_header_scan = nrrd.read(self.original_data_folder + self.test_patient + '/scan.nrrd')
         if self.mode == 'test':
             _, origin_header_segm = nrrd.read(self.original_data_folder + self.test_patient + '/segm.nrrd')
+        else:
+            origin_header_segm = origin_header_scan
         
         for i in range(3):
             origin_header_scan['space directions'][i][i] = self.original_spacing[i]
@@ -355,7 +357,7 @@ class Tester():
     
     
     def show_scan_vs_truth(self):
-        if self.mode = 'test':
+        if self.mode == 'test':
             ImageSliceViewer3D(self.scan, self.truth_segm, title_left="Scan", title_right="Ground Truth")
         else:
             print("No truth available.")
