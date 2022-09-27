@@ -2,6 +2,7 @@
 Code for the pytorch implementation of the 3D UNet-VGG16 backbone for the SAIAD project.
 
 ## Folder Structure
+```bash
   .
   ├── README.md : read me file
   ├── dataset_test.ipynb : (ignore) ipynb for debugging some of the dataset functions
@@ -14,3 +15,4 @@ Code for the pytorch implementation of the 3D UNet-VGG16 backbone for the SAIAD 
   ├── unet3d : main functions implementing UNet3D with VGG16 backbone
   ├── unet3dvgg16_tensorflow_summary.txt : (ignore) a model summary of the Tensorflow version of the model
   └── utils : other useful functions
+```
