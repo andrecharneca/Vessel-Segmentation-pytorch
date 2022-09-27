@@ -16,3 +16,5 @@ Code for the pytorch implementation of the 3D UNet-VGG16 backbone for the SAIAD 
   ├── unet3dvgg16_tensorflow_summary.txt : (ignore) a model summary of the Tensorflow version of the model
   └── utils : other useful functions
 ```
+## General Details
+This repo implements the UNet3D model with a VGG16 backbone on Pytorch, as the one obtained by the Tensorflow based package `segmentation-models-3d`.
