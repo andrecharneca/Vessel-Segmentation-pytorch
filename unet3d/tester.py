@@ -10,6 +10,7 @@ from scipy.ndimage import gaussian_filter
 import cc3d
 from utils.Visualization import ImageSliceViewer3D
 from unet3d.config import *
+from unet3d.dice import dice_coef_torch_multiclass
 from unet3d.transforms import test_transform
 from unet3d.unet3d_vgg16 import UNet3D_VGG16
 from utils.Other import restore_from_patches_onehot
@@ -70,7 +71,9 @@ class Tester():
         # Folders to read out of
         self.original_data_folder = NON_PROCESSED_DATASET_PATH
         self.processed_data_folder = DATASET_PATH
-
+        
+        # Mode: test if truth available, else inference
+        self.mode = None
 
     def load_model(self, model_path):
         model = UNet3D_VGG16(
@@ -88,8 +91,13 @@ class Tester():
         Also 0-pads until the next multiple of step_size, for each direction.
         """
         scan, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/scan.nrrd')
-        truth_segm, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
-        
+        try:
+            self.mode = 'test'
+            truth_segm, _ = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
+        except FileNotFoundError:
+            print('No truth segmentation found: Inference mode enabled')
+            self.mode = 'infer'
+            
         # Compute pad amounts
         pad_amounts = []
         for i in range(3):
@@ -105,14 +113,15 @@ class Tester():
         scan = np.pad(scan, (paddings[0],(0,0),(0,0)), constant_values = 0)
         scan = np.pad(scan, ((0,0), paddings[1],(0,0)), constant_values = 0)
         scan = np.pad(scan, ((0,0),(0,0),paddings[2]), constant_values = 0)
-        truth_segm = np.pad(truth_segm, (paddings[0],(0,0),(0,0)), constant_values = 0)
-        truth_segm = np.pad(truth_segm, ((0,0), paddings[1],(0,0)), constant_values = 0)
-        truth_segm = np.pad(truth_segm, ((0,0),(0,0),paddings[2]), constant_values = 0)
+        if self.mode == 'test':
+            truth_segm = np.pad(truth_segm, (paddings[0],(0,0),(0,0)), constant_values = 0)
+            truth_segm = np.pad(truth_segm, ((0,0), paddings[1],(0,0)), constant_values = 0)
+            truth_segm = np.pad(truth_segm, ((0,0),(0,0),paddings[2]), constant_values = 0)
 
         self.scan = scan
-        self.truth_segm = truth_segm
+        if self.mode == 'test': self.truth_segm = truth_segm
         
-        _,header = nrrd.read(self.original_data_folder + self.test_patient +'/segm.nrrd')
+        _,header = nrrd.read(self.original_data_folder + self.test_patient +'/scan.nrrd')
         self.original_spacing = np.diagonal(header['space directions'])
 
         # Save the paddings so we can remove them later
@@ -124,7 +133,8 @@ class Tester():
         self.scan = self.scan[self.paddings[0][0]:(self.scan.shape[0]-self.paddings[0][1]),
                         self.paddings[1][0]:(self.scan.shape[1]-self.paddings[1][1]),
                         self.paddings[2][0]:(self.scan.shape[2]-self.paddings[2][1])]
-        self.truth_segm = self.truth_segm[self.paddings[0][0]:(self.truth_segm.shape[0]-self.paddings[0][1]),
+        if self.mode == 'test':
+            self.truth_segm = self.truth_segm[self.paddings[0][0]:(self.truth_segm.shape[0]-self.paddings[0][1]),
                         self.paddings[1][0]:(self.truth_segm.shape[1]-self.paddings[1][1]),
                         self.paddings[2][0]:(self.truth_segm.shape[2]-self.paddings[2][1])]
 
@@ -154,7 +164,8 @@ class Tester():
         """
         _, unif_header = nrrd.read(self.processed_data_folder + self.test_patient + '/segm.nrrd')
         nrrd.write(self.uniform_spacing_folder + self.test_patient + '_pred_segm.nrrd', self.pred_segm_index, unif_header)
-        nrrd.write(self.uniform_spacing_folder + self.test_patient + '_truth_segm.nrrd', self.truth_segm, unif_header)
+        if self.mode == 'test':
+            nrrd.write(self.uniform_spacing_folder + self.test_patient + '_truth_segm.nrrd', self.truth_segm, unif_header)
 
     
     def resample_to_original_and_save(self):
@@ -237,7 +248,7 @@ class Tester():
                     else:
                         patch_input = torch.Tensor(patch).to(self.device)
                         
-                    if (i,j,k)==(0,0,1): temp['patch_input'] = patch_input###
+                    if (i,j,k)==(2,2,1): temp['patch_input'] = patch_input###
                     
                     with torch.no_grad() and torch.cuda.amp.autocast():
                         single_patch_predictions = self.model(patch_input)
@@ -247,7 +258,7 @@ class Tester():
                         tmp_patch = {'patch_scan_flipped': single_patch_predictions[1]}
                         single_patch_predictions[1] = self.transform(tmp_patch)['patch_scan_flipped']
                         
-                    if (i,j,k)==(0,0,1): temp['single_patch_predictions'] = single_patch_predictions###
+                    if (i,j,k)==(2,2,1): temp['single_patch_predictions'] = single_patch_predictions###
 
                     # Average the probabilities and append
                     predicted_patches_onehot[i,j,k] = (torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
@@ -271,7 +282,7 @@ class Tester():
         # Unpad to original size
         self.unpad_scan_and_truth_segm()
 
-        if verbose: print("Done.")
+        if verbose: print("Prediction done.")
         # Free memory
         scan_patchified = scan_patchified_shape = None
         return temp###
@@ -351,4 +362,4 @@ class Tester():
         Computes dice between pred_segm_index and truth_index.
         Outputs the dice values in class order (background is class 0)
         """
-        return dice_coef_multiclass(self.truth_segm, self.pred_segm_index, self.n_classes, one_hot=False)
+        return dice_coef_torch_multiclass(self.truth_segm, self.pred_segm_index, self.n_classes, one_hot_encoded=False)

@@ -10,7 +10,7 @@ from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
 from torch.nn.functional import one_hot, softmax
 from torch.optim import Adam
-from unet3d.unet3d_vgg16 import UNet3D_VGG16
+from unet3d.unet3d_vgg16 import UNet3D_VGG16, init_weights
 from utils.Other import get_headers
 from unet3d.dataset import SAIADDataset, WrappedDataLoader, to_device
 from torch.utils.data import DataLoader
@@ -20,7 +20,7 @@ from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
 date='27sep'
-model_name = f'saiad1and18tervasc_{date}'
+model_name = f'glorotinit_saiad1and18tervasc_{date}'
 writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
@@ -33,7 +33,7 @@ torch.backends.cudnn.enabled = True
 device = torch.device('cuda')
 pin_memory = True###
 
-excl_patients_training = ['SAIAD 1']#, 'SAIAD 18 TER vasculaire'] #patients for validation/testing
+excl_patients_training = ['SAIAD 1', 'SAIAD 18 TER vasculaire'] #patients for validation/testing
 excl_patients_val = list(set(patient_names) - set(excl_patients_training))
 
 print("Training with val patients:", excl_patients_training)
@@ -81,13 +81,14 @@ model = UNet3D_VGG16(
     num_classes=NUM_CLASSES,
     use_softmax_end=False #set this to false for training with CELoss
     ).to(device)
+model.apply(init_weights)
 
 loss_fn = CrossEntropyLoss(
     weight=torch.Tensor(np.array(CE_WEIGHTS)/np.array(CE_WEIGHTS).sum()),
     reduction = 'mean'
     ).cuda()
 
-optimizer = Adam(params=model.parameters(), lr=LR)
+optimizer = Adam(params=model.parameters(), lr=LR, eps=1e-7)
 scaler = torch.cuda.amp.GradScaler()
 
 
@@ -169,8 +170,8 @@ for epoch in range(EPOCHS):
     writer.add_scalar("Kidney Dice/val", dice_vals[4]/VAL_BATCHES_PER_EPOCH, epoch)
     
     # Checkpoints #
-    if min_valid_loss > valid_loss:
-        print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
+    if min_valid_loss > valid_loss/VAL_BATCHES_PER_EPOCH:
+        print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss/VAL_BATCHES_PER_EPOCH:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
         torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}.pth')

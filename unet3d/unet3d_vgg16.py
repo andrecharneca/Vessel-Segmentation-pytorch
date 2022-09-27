@@ -10,6 +10,12 @@ import torch
 import time
 
 
+def init_weights(m):
+    """ Same initialization as the segmentation-models-3D implementation: 'glorot_uniform', and zero bias """
+    if isinstance(m, nn.Conv3d):
+        torch.nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            torch.nn.init.constant_(m.bias.data, 0)
 
 class Conv3DBlock_2conv(nn.Module):
     """
