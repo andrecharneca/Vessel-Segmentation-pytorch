@@ -52,6 +52,9 @@ SAIAD_data_processed
 ## Training
 The general configuration for training 1 model is found in `unet3d/config.py`, and the data augmentations used are in `unet3d/transforms.py`. The training itself is done by the script `train.py`. I trained with validation/test patients 'SAIAD 1' and 'SAIAD 18 TER vasculaire', and got similar results to the Tensorflow implementation.
 
+### Requirements
+The training was done on a Tesla T100 16GB, and took about 4h per model. It uses about 13GB of VRAM and 20-30GB of RAM.
+
 ## Inference and Testing
 The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. This class can be used either for testing (known truth), or just inference (no known truth segmentation). The inference pipeline is the following:
 ![alt text](infer_pipeline.png)
