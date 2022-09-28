@@ -20,7 +20,7 @@ from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
 date='28sep'
-model_name = f'sgdmom_glorotinit_saiad1and18tervasc_{date}'
+model_name = f'normalized_glorotinit_saiad1and18tervasc_{date}'
 writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
@@ -88,7 +88,7 @@ loss_fn = CrossEntropyLoss(
     reduction = 'mean'
     ).cuda()
 
-optimizer = SGD(model.parameters(), lr=LR, momentum=0.9)#Adam(params=model.parameters(), lr=LR, eps=1e-7)
+optimizer = Adam(params=model.parameters(), lr=LR, eps=1e-7)
 scaler = torch.cuda.amp.GradScaler()
 
 
@@ -174,10 +174,10 @@ for epoch in range(EPOCHS):
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss/VAL_BATCHES_PER_EPOCH:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss/VAL_BATCHES_PER_EPOCH
         # Saving State Dict
-        torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}.pth')
+        torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch+1}.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
         print(f'\t Reached checkpoint. \t Saving The Model')
-        torch.save(model.state_dict(),f'checkpoints/{model_name}_epoch{epoch}.pth')
+        torch.save(model.state_dict(),f'checkpoints/{model_name}_epoch{epoch+1}.pth')
 
 
 # Tensorboard #
