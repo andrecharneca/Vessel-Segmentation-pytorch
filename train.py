@@ -9,7 +9,7 @@ from unet3d.config import *
 from tqdm import tqdm
 from torch.nn import CrossEntropyLoss
 from torch.nn.functional import one_hot, softmax
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from unet3d.unet3d_vgg16 import UNet3D_VGG16, init_weights
 from utils.Other import get_headers
 from unet3d.dataset import SAIADDataset, WrappedDataLoader, to_device
@@ -19,8 +19,8 @@ from pynvml.smi import nvidia_smi
 from unet3d.transforms import train_transform, val_transform
 from unet3d.dice import *
 
-date='27sep'
-model_name = f'glorotinit_saiad1and18tervasc_{date}'
+date='28sep'
+model_name = f'sgdmom_glorotinit_saiad1and18tervasc_{date}'
 writer = SummaryWriter(log_dir=f'runs/{model_name}')
 torch.manual_seed(0)
 _,_,patient_names = get_headers(DATASET_PATH)
@@ -88,7 +88,7 @@ loss_fn = CrossEntropyLoss(
     reduction = 'mean'
     ).cuda()
 
-optimizer = Adam(params=model.parameters(), lr=LR, eps=1e-7)
+optimizer = SGD(model.parameters(), lr=LR, momentum=0.9)#Adam(params=model.parameters(), lr=LR, eps=1e-7)
 scaler = torch.cuda.amp.GradScaler()
 
 
