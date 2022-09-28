@@ -172,7 +172,7 @@ for epoch in range(EPOCHS):
     # Checkpoints #
     if min_valid_loss > valid_loss/VAL_BATCHES_PER_EPOCH:
         print(f'\t Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss/VAL_BATCHES_PER_EPOCH:.6f}) \t Saving The Model')
-        min_valid_loss = valid_loss
+        min_valid_loss = valid_loss/VAL_BATCHES_PER_EPOCH
         # Saving State Dict
         torch.save(model.state_dict(), f'checkpoints/{model_name}_epoch{epoch}.pth')
     elif (epoch+1)%(EPOCHS//10) == 0:
