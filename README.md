@@ -29,7 +29,7 @@ The data in `SAIAD_data_cleared` is pre-processed in the notebook `process_all_d
  - Cut or pad x-y plane to 512x512
  - Cutting the intensity window to [-200,600]
  - Rescale to [0,255] values
- - Remove the slices that don't have vessel segmentations.
+ - Remove the slices that don't have vessel segmentations from the top and bottom of the scan
  - Pad (zero) in z-axis until nearest multiple of 64 (**note**: with the new random sampler, this isn't needed anymore, but doesn't hurt)
  - Convert the 2 labels assigned for kidneys into just 1, and remove the extra classes.
       - Renal cavities were converted to kidneys here
@@ -53,5 +53,5 @@ SAIAD_data_processed
 The general configuration for training 1 model is found in `unet3d/config.py`. The training itself is done by the script `unet3d/config.py`. I trained with validation/test patients 'SAIAD 1' and 'SAIAD 18 TER vasculaire', and got similar results to the Tensorflow implementation.
 
 ## Inference and Testing
-The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. The inference pipeline is the following:
-
+The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. This class can be used either for testing (known truth), or just inference (no known truth segmentation). The inference pipeline is the following:
+![alt text](infer_pipeline.png)
