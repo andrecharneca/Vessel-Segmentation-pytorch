@@ -23,7 +23,7 @@ This repo implements the UNet3D model with a VGG16 backbone on Pytorch, as the o
 **Note**: although I tried to use all the same hyperparams between the TF and Pytorch models, some differences might still remain. Also, ADAM in Pytorch appears to be slightly different to TF, leading to worse results when training (see https://discuss.pytorch.org/t/suboptimal-convergence-when-compared-with-tensorflow-model/5099/49)
 
 ## Pre-Processing
-The data in `SAIAD_data_cleared` is pre-processed into `SAIAD_data_processed` with the following steps:
+The data in `SAIAD_data_cleared` is pre-processed in the notebook `process_all_data.ipynb`, into `SAIAD_data_processed` with the following steps:
 
  - Resample data to [0.5,0.5,1] voxel spacing.
  - Cut or pad x-y plane to 512x512
@@ -50,5 +50,8 @@ SAIAD_data_processed
 ```
 
 ## Training
+The general configuration for training 1 model is found in `unet3d/config.py`. The training itself is done by the script `unet3d/config.py`. I trained with validation/test patients 'SAIAD 1' and 'SAIAD 18 TER vasculaire', and got similar results to the Tensorflow implementation.
 
 ## Inference and Testing
+The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. The inference pipeline is the following:
+
