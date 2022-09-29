@@ -220,7 +220,7 @@ class Tester():
         Notes:
             - This generates a predicted segmentation with the same voxel spacings as test_scan.
         """
-        temp = {}
+
         # Read test data
         self.read_test_patient_data_and_pad()
         
@@ -255,9 +255,7 @@ class Tester():
                         patch_input = torch.Tensor(patch_transform).to(self.device)
                     else:
                         patch_input = torch.Tensor(patch).to(self.device)
-                        
-                    if (i,j,k)==(2,2,1): temp['patch_input'] = patch_input###
-                    
+                                            
                     with torch.no_grad() and torch.cuda.amp.autocast():
                         single_patch_predictions = self.model(patch_input)
                         
@@ -265,8 +263,6 @@ class Tester():
                     if with_transforms:
                         tmp_patch = {'patch_scan_flipped': single_patch_predictions[1]}
                         single_patch_predictions[1] = self.transform(tmp_patch)['patch_scan_flipped']
-                        
-                    if (i,j,k)==(2,2,1): temp['single_patch_predictions'] = single_patch_predictions###
 
                     # Average the probabilities and append
                     predicted_patches_onehot[i,j,k] = (torch.mean(single_patch_predictions, axis=0).cpu().detach().numpy())
@@ -278,7 +274,6 @@ class Tester():
 
         # Reconstruct from patches
         if verbose: print("Unpatchifying...")
-        temp['predicted_patches_onehot'] = predicted_patches_onehot###
         
         self.pred_segm_onehot = restore_from_patches_onehot(self.scan.shape, predicted_patches_onehot,
                                                             xstep=self.step_size[0],
@@ -293,8 +288,6 @@ class Tester():
         if verbose: print("Prediction done.")
         # Free memory
         scan_patchified = None
-        return temp###
-
         
     ## Post processing functions ##
     def apply_gaussian_blur(self, sigma = 2, truncate = 2):
