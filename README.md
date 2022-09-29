@@ -12,6 +12,7 @@ Code for the pytorch implementation of the 3D UNet-VGG16 backbone for the SAIAD 
   ├── test.ipynb : ipynb with testing and inference pipelines
   ├── test_notebooks : (ignore) notebooks for debugging
   ├── train.py : train script
+  ├── process_all_data.ipynb : notebook used for pre-processing all the scans
   ├── unet3d : main functions implementing UNet3D with VGG16 backbone
   ├── unet3dvgg16_tensorflow_summary.txt : (ignore) a model summary of the Tensorflow version of the model
   └── utils : other useful functions
