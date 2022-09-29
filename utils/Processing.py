@@ -1,12 +1,9 @@
 # Includes pre-processing functions #
 
 import numpy as np
-#from volumentations import *
-from patchify import patchify, unpatchify
-#from tensorflow.keras.utils import to_categorical
+from patchify import patchify
 import sys
 import nibabel as nib
-#from starter_code.utils import load_case
 import nrrd
 import os
 import glob
@@ -206,8 +203,8 @@ def get_augmentation(patch_size=64,p_Rotate=0,p_ElasticTransform=0,
 
 def read_data_and_resample(data_path, voxel_spacings=[0.5,0.5,1], verbose = 0):
     """ 
-    Reads scans and segmentations in the data folder, and resamples them to the
-    specified spacings.
+    Reads scans and segmentations in the data folder, resamples them to the
+    specified spacings, and cuts x-y to 512x512
     
     Args:
         data_folder: main folder where the individual patient folders are
@@ -279,7 +276,7 @@ def process_data_saiad(scans, segmentations, patient_names, verbose=0):
     """
     
     for i in range(len(scans)):
-        if verbose: print("\nProcessing scan ", patient_names[i], end=" , ")
+        if verbose: print("Processing scan ", patient_names[i], end=" , ")
             
         # Cutting intensity window
         scans[i] = apply_intensity_window(scans[i], -200,600)
