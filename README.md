@@ -17,7 +17,7 @@ PyTorch implementation of the 3D UNet-VGG16 backbone for the SAIAD project.
   └── README.md
 ```
 ## General Details
-This repo implements the UNet3D model with a VGG16 backbone on Pytorch, as the one obtained by the Tensorflow based package `segmentation-models-3d`.
+This repo implements the UNet3D model with a VGG16 backbone on Pytorch, as the one obtained by the Tensorflow based package `segmentation-models-3d`. It was trained on 96x96x96 size patches.
 ![alt text](images/network_architecture.png)
 
 **Note**: although I tried to use all the same hyperparams between the TF and Pytorch models, some differences might still remain. Also, ADAM in Pytorch appears to be slightly different to TF, leading to worse results when training (see https://discuss.pytorch.org/t/suboptimal-convergence-when-compared-with-tensorflow-model/5099/49)
