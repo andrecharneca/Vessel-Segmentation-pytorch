@@ -4,23 +4,21 @@ PyTorch implementation of the 3D UNet-VGG16 backbone for the SAIAD project.
 ## Folder Structure
 ```bash
   .
-  ├── README.md : read me file
-  ├── dataset_test.ipynb : (ignore) ipynb for debugging some of the dataset functions
-  ├── job.sge : job to submit to mesocenter
-  ├── model_test.ipynb : (ignore) ipynb for debugging the model
-  ├── runs : folder for Tensorboard runs
-  ├── test.ipynb : ipynb with testing and inference pipelines
-  ├── test_notebooks : (ignore) notebooks for debugging
+  ├── unet3d/ : main functions implementing UNet3D with VGG16 backbone
+  ├── utils/ : other useful functions and files
+  ├── runs/ : folder for Tensorboard runs
+  ├── test_notebooks/ : (ignore) more notebooks for debugging
   ├── train.py : train script
+  ├── test.ipynb : ipynb with testing and inference pipelines
   ├── process_all_data.ipynb : notebook used for pre-processing all the scans
-  ├── unet3d : main functions implementing UNet3D with VGG16 backbone
-  ├── unet3dvgg16_tensorflow_summary.txt : (ignore) a model summary of the Tensorflow version of the model
   ├── requirements.txt : minimum package requirements
-  └── utils : other useful functions
+  ├── model_test.ipynb : (ignore) ipynb for debugging the model
+  ├── dataset_test.ipynb : (ignore) ipynb for debugging some of the dataset functions
+  └── README.md
 ```
 ## General Details
 This repo implements the UNet3D model with a VGG16 backbone on Pytorch, as the one obtained by the Tensorflow based package `segmentation-models-3d`.
-![alt text](network_architecture.png)
+![alt text](images/network_architecture.png)
 
 **Note**: although I tried to use all the same hyperparams between the TF and Pytorch models, some differences might still remain. Also, ADAM in Pytorch appears to be slightly different to TF, leading to worse results when training (see https://discuss.pytorch.org/t/suboptimal-convergence-when-compared-with-tensorflow-model/5099/49)
 
@@ -59,4 +57,4 @@ The training was done on a Tesla T100 16GB, and took about 4h per model. It uses
 
 ## Inference and Testing
 The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. This class can be used either for testing (known truth), or just inference (no known truth segmentation). The inference pipeline is the following:
-![alt text](infer_pipeline.png)
+![alt text](images/infer_pipeline.png)
