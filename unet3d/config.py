@@ -3,9 +3,9 @@
 """""
 Folders:
     :param DATASET_PATH -> the directory path to the processed SAIAD patients (each with respective subfolder)
-    :param NON_PROCESSED_DATASET_PATH ->
-    :param PREDICTIONS_UNIF_PATH ->
-    :param PREDICTIONS_ORIGIN_PATH ->
+    :param NON_PROCESSED_DATASET_PATH -> path to non pre-processed SAIAD patients
+    :param PREDICTIONS_UNIF_PATH -> path where the model will create uniform voxel spacing predictions
+    :param PREDICTIONS_ORIGIN_PATH -> path where the model will create predictions with the original voxel spacing of each scan
 """""
 DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_processed/'
 NON_PROCESSED_DATASET_PATH = '../SAIAD-project/Data/SAIAD_data_cleared/'
