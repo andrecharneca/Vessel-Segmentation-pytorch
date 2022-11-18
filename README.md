@@ -55,6 +55,28 @@ The general configuration for training 1 model is found in `unet3d/config.py`, a
 ### Requirements
 The training was done on a Tesla T100 16GB, and took about 4h per model. It uses about 13GB of VRAM and 20-30GB of RAM.
 
+
 ## Inference and Testing
 The testing and inference is done in the notebook `test.ipynb`, using the `Tester` class from `unet3d/tester.py`. This class can be used either for testing (known truth), or just inference (no known truth segmentation). The inference pipeline is the following:
 ![alt text](images/infer_pipeline.png)
+
+### How the model generates predictions
+Sequentially, the following happens:
+1. `Tester` loads the provided model and creates the folders (paths in `config.py`) where the predictions with uniform voxel spacing and original voxel spacing will be sent to.
+2. It reads the test patient scans, and pads the axes to the nearest multiple of `step_size`.
+    * Here, it saves the original voxel spacing of that patient (to resample at the end), and the paddings on each side, so the metadata in the final `nrrd` file doesn't get screwed up.
+3. It patchifies the test scan, and then predicts on each patch (or multiple transforms of each patch, depending on the `with_transforms` value.
+4. It unpatchifies the predicted patches, taking into account the overlapping zones.
+5. The padded scan and predicted segmentation are unpadded (with the values saved before).
+6. Now, `save_uniform_spacing_segm()` saves the predicted segmentation, the truth segmentation[^1] and the scan to the `PREDICTIONS_UNIF_PATH`.
+7. `resample_to_original_and_save()` resamples the scan to the correct/original voxel spacing, and it saves the predicted segmentation, the truth segmentation[^1] and the scan to the `PREDICTIONS_ORIGIN_PATH`. 
+
+By the end, we have the scan and the predicted segmentation in `PREDICTIONS_ORIGIN_PATH/SAIAD_test_patient`.
+[^1]: The scan is saved along with the predicted segmentation and the *true* segmentation for a more accurate Dice calculation, since resampling from original voxel spacing -> uniform -> original might change the true segmentation and scan slightly.
+
+
+## How to use
+- Change the dataset paths in `config.py` to the ones we are using (see Pre-processing section for folder layout).
+- Assuming you don't have pre-processed data, we need to run `process_all_data.ipynb` to process the data. Run all the cells in it, a new folder at DATASET_PATH (set in config) will now have the pre-processed data.
+
+We are now ready to train (and then test) our models. Change the training parameters in `config.py`to your heart's content and run `train.py`.
