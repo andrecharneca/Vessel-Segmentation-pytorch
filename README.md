@@ -1,6 +1,9 @@
 # Renal Vessel Segmentation PyTorch
 PyTorch implementation of the 3D UNet-VGG16 backbone for the SAIAD project.
 
+## Example
+![SAIAD 1 patient](images/Screenshot%202023-12-12%20at%2015.07.28.png)
+
 ## Folder Structure
 ```bash
   .
